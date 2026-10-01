@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Generic AR logo">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2b73"/>
+      <stop offset="50%" stop-color="#3a62d7"/>
+      <stop offset="100%" stop-color="#1fc8db"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#g)"/>
+  <g fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M140 338 212 176l72 162"/>
+    <path d="M168 286h88"/>
+    <path d="M314 178h98l-50 78 52 84h-98"/>
+    <path d="M336 260h54"/>
+  </g>
+</svg>

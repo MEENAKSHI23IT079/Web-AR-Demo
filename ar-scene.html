@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Open AR Scene</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/Icon/app-icon.svg">
+    <link rel="apple-touch-icon" href="assets/img/Icon/app-icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="assets/style.css?v=20260214-01" />
+    <link rel="stylesheet" href="assets/reset-button.css?v=20260214-01" />
+    <link rel="preload" as="fetch" href="assets/Gltf/model.glb?v=20260214-01" crossorigin>
+    <link rel="preload" as="fetch" href="assets/Mind/targets.mind?v=20260214-01" crossorigin>
+    <!-- Progress bar styles -->
+    <style>
+        .model-progress {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 170px;
+            max-width: 260px;
+            width: 62%;
+            background: rgba(15, 23, 69, .72);
+            border: 1px solid rgba(255, 255, 255, .28);
+            padding: 10px 14px 11px;
+            border-radius: 18px;
+            color: #fff;
+            z-index: 12000;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .55);
+            font-family: "Vazirmatn", system-ui, sans-serif;
+            font-size: 13px;
+            direction: ltr;
+            text-align: center;
+            line-height: 1.5
+        }
+
+        .model-progress.hidden {
+            display: none
+        }
+
+        .model-progress__bar {
+            position: relative;
+            width: 100%;
+            height: 7px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, .18);
+            overflow: hidden;
+            margin-bottom: 8px
+        }
+
+        .model-progress__fill {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, #ff9d1c, #ffb347, #ffc878);
+            border-radius: 6px;
+            transition: width .25s cubic-bezier(.4, .55, .3, 1)
+        }
+
+        .model-progress__percent {
+            font-weight: 600;
+            letter-spacing: .4px;
+            font-size: 13px
+        }
+
+        .model-progress__percent.done {
+            animation: pPulse .8s ease-in-out 1
+        }
+
+        @keyframes pPulse {
+            0% {
+                transform: scale(1);
+                opacity: 1
+            }
+
+            50% {
+                transform: scale(1.08);
+                opacity: .85
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- فونت مطمئن: Google Fonts (جایگزین @import قبلی که 404 می‌داد) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* حذف @import مشکل‌دار؛ اکنون فونت Vazirmatn از Google Fonts لود می‌شود */
+
+        body {
+            font-family: "Vazirmatn", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            direction: ltr;
+            /* گرادیانت مطابق صفحه ورود */
+            background: linear-gradient(180deg, #0f1745 0%, #233871 20%, #233871 80%, #0f1745 100%);
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+            /* فیکس viewport برای consistency بین دستگاه‌ها */
+            width: 100vw;
+            min-height: 100vh;
+            min-height: 100svh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        h2,
+        button,
+        li,
+        strong {
+            font-family: inherit;
+        }
+
+        /* Overlay for capability / permission errors */
+        .ar-blocker {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(160deg, rgba(15, 23, 69, .94), rgba(35, 56, 113, .92));
+            color: #fff;
+            font-family: "Vazirmatn", system-ui, sans-serif;
+            z-index: 99999;
+            padding: 38px 24px 52px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            /* فیکس نسبت‌ها برای consistency */
+            width: 100vw;
+            height: 100vh;
+            height: 100svh;
+            height: 100dvh;
+            box-sizing: border-box;
+        }
+
+        .ar-blocker.hidden {
+            display: none;
+        }
+
+        .ar-blocker h1 {
+            margin: 0 0 18px;
+            font-size: 22px;
+            letter-spacing: .6px;
+        }
+
+        .ar-blocker p {
+            margin: 0 0 14px;
+            font-size: 14.5px;
+            line-height: 1.9;
+        }
+
+        .ar-blocker .tips {
+            font-size: 13px;
+            opacity: .85;
+            line-height: 1.7;
+            margin-top: 6px;
+        }
+
+        .ar-blocker button {
+            margin-top: 20px;
+            background: linear-gradient(135deg, #233871, #2d4588);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, .25);
+            padding: 14px 30px;
+            font-size: 14px;
+            border-radius: 22px;
+            cursor: pointer;
+            box-shadow: 0 10px 26px -10px rgba(0, 0, 0, .7);
+        }
+
+        .ar-hidden {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* کانتینر مشترک دکمه‌های پایین برای کنار هم نگه داشتن */
+        .ar-bottom-controls {
+            position: fixed;
+            left: 50%;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0));
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            /* فاصله بین دکمه‌ها */
+            flex-wrap: wrap;
+            /* اگر جا نشد به خط بعد برود تا از صفحه بیرون نزند */
+            padding: 0 8px;
+            pointer-events: none;
+            /* خودِ کانتینر کلیک‌پذیر نباشد */
+            /* Hide buttons initially until AR scene is loaded */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .ar-bottom-controls.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .ar-bottom-controls>* {
+            pointer-events: auto;
+        }
+
+        .ar-bottom-controls .ar-reset-btn,
+        .ar-bottom-controls .ar-play-btn {
+            flex: 1 1 0;
+            /* پهنای مساوی */
+            max-width: 44vw;
+            /* هر دکمه نزدیک به نصف عرض */
+            min-width: 140px;
+            /* حداقل یکسان */
+            padding: 12px 18px 13px;
+            /* پدینگ یکسان */
+            font-size: 13px;
+            /* فونت یکسان */
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* وقتی FREE_MODE است، این ردیف را پنهان کن (در اسکریپت هم این کار انجام می‌شود ولی اینجا هم حفاظتی است) */
+        body.free-mode .ar-bottom-controls {
+            display: none;
+        }
+
+        /* کمی همگن‌سازی با اندازه‌های کوچک */
+        @media (max-width: 380px) {
+            .ar-bottom-controls {
+                gap: 12px;
+            }
+
+            .ar-bottom-controls .ar-reset-btn,
+            .ar-bottom-controls .ar-play-btn {
+                max-width: 46vw;
+                min-width: 128px;
+            }
+        }
+    </style>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <!-- RGBELoader for HDR environment maps (compatible with global THREE used by A-Frame) -->
+    <script src="https://unpkg.com/three@0.152.2/examples/js/loaders/RGBELoader.js"></script>
+    <script>
+        // حالت AR آزاد بر اساس کوئری‌استرینگ ?mode=free
+        window.FREE_MODE = (new URLSearchParams(location.search).get('mode') === 'free');
+        if (window.FREE_MODE) { try { document.documentElement.classList.add('free-mode'); document.body && document.body.classList.add('free-mode'); } catch (e) { } }
+    </script>
+    <script>
+        // تلاش برای استفاده از حداکثر کیفیت دوربین در حالت MindAR
+        // با override کردن getUserMedia و افزودن محدودیت‌های ایده‌آل (رزولوشن/فریم‌ریت) + fallback ایمن
+        (function () {
+            if (window.FREE_MODE) return; // WebXR (free mode) جریان ویدیوی سیستم را کنترل می‌کند و قابل تنظیم از این طریق نیست
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+            const origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+
+            function isObj(x) { return x && typeof x === 'object' && !Array.isArray(x); }
+            function mergeVideoConstraints(baseVideo, extraVideo) {
+                const out = isObj(baseVideo) ? { ...baseVideo } : {};
+                // Merge scalar/simple keys conservatively
+                const copy = (k) => { if (k in extraVideo && !(k in out)) out[k] = extraVideo[k]; };
+                // Prefer preserving caller's values; only fill if absent
+                ['facingMode', 'width', 'height', 'frameRate', 'aspectRatio'].forEach(copy);
+                // Merge advanced (array)
+                if (Array.isArray(extraVideo.advanced)) {
+                    out.advanced = (out.advanced || []).concat(extraVideo.advanced);
+                }
+                return out;
+            }
+
+            async function tryHiRes(constraints) {
+                const original = constraints || {};
+                const hasVideoFlag = original.video === true;
+                const baseVideo = hasVideoFlag ? {} : (isObj(original.video) ? original.video : {});
+                const hi = {
+                    facingMode: baseVideo.facingMode || { ideal: 'environment' },
+                    width: baseVideo.width || { ideal: 1920, max: 2560 },
+                    height: baseVideo.height || { ideal: 1080, max: 1440 },
+                    frameRate: baseVideo.frameRate || { ideal: 60, max: 60 },
+                    advanced: [
+                        { focusMode: 'continuous' },
+                        { exposureMode: 'continuous' },
+                        { whiteBalanceMode: 'continuous' },
+                        { noiseSuppression: true },
+                        { torch: true }
+                    ]
+                };
+                const req1 = {
+                    ...original,
+                    video: mergeVideoConstraints(baseVideo, hi)
+                };
+                try {
+                    return await origGUM(req1);
+                } catch (err1) {
+                    // Overconstrained? try a more permissive HD@30
+                    const req2 = {
+                        ...original,
+                        video: mergeVideoConstraints(baseVideo, {
+                            facingMode: baseVideo.facingMode || { ideal: 'environment' },
+                            width: baseVideo.width || { ideal: 1280 },
+                            height: baseVideo.height || { ideal: 720 },
+                            frameRate: baseVideo.frameRate || { ideal: 30, max: 30 }
+                        })
+                    };
+                    try {
+                        return await origGUM(req2);
+                    } catch (err2) {
+                        // Give up and try the original constraints untouched
+                        return await origGUM(original);
+                    }
+                }
+            }
+
+            navigator.mediaDevices.getUserMedia = function (constraints) {
+                // اگر فقط صدا خواسته شده باشد، اصل را صدا بزن
+                if (constraints && !constraints.video) {
+                    return origGUM(constraints);
+                }
+                return tryHiRes(constraints);
+            };
+        })();
+    </script>
+    <script>
+        // نسخه سایت برای تشخیص آپدیت (version.json)
+        const LOCAL_SITE_VERSION = '20260214-01';
+        async function checkSiteVersion() {
+            try {
+                const resp = await fetch('version.json', { cache: 'no-store' });
+                if (!resp.ok) {
+                    console.warn('[Version] version.json not found (legacy build AR) – force clearing caches');
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map(k => { if (!k.startsWith('open-ar-')) return caches.delete(k); }));
+                    }
+                    return;
+                }
+                const data = await resp.json();
+                if (data.version && data.version !== LOCAL_SITE_VERSION) {
+                    console.log('[Version] New version detected (AR page)', data.version, 'local=', LOCAL_SITE_VERSION);
+                    if (navigator.serviceWorker?.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    console.log('[Version] Up-to-date (AR)', LOCAL_SITE_VERSION);
+                }
+            } catch (e) { console.warn('Version check failed (AR)', e); }
+        }
+        window.addEventListener('load', () => { checkSiteVersion(); setInterval(checkSiteVersion, 60000); });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', evt => {
+                if (evt.data?.type === 'SW_VERSION') {
+                    console.log('[SW] Active version (AR)', evt.data.version);
+                }
+            });
+        }
+        //
+        // اگر دستگاه موبایل یا تبلت نبود ریدایرکت به index.html
+        (function () {
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isMobileUA = /android|iphone|ipad|ipod|windows phone|iemobile|blackberry|bb10/i.test(ua.toLowerCase());
+            // iPad های جدید ممکن است خود را مثل دسکتاپ معرفی کنند؛ از touch points هم استفاده می‌کنیم
+            var isLikelyTablet = (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && /macintosh/i.test(ua) && 'ontouchend' in document);
+            var isTouchGeneric = ('ontouchstart' in window) && (navigator.maxTouchPoints > 0);
+            var isMobileOrTablet = isMobileUA || isLikelyTablet || isTouchGeneric;
+            if (!isMobileOrTablet) {
+                window.location.replace('index.html');
+            }
+        })();
+    </script>
+    <script>
+        // کامپوننت برای چرخاندن مدل با درگ با «قفل محور»: فقط یکی از محورها (افقی یا عمودی) در هر ژست فعال می‌شود
+        AFRAME.registerComponent('drag-rotate', {
+            schema: {
+                speed: { type: 'number', default: 0.5 },          // سرعت Yaw (چپ/راست)
+                verticalSpeed: { type: 'number', default: 0.5 },   // سرعت Pitch (بالا/پایین)
+                minPitch: { type: 'number', default: -120 },       // حداقل زاویه محور X
+                maxPitch: { type: 'number', default: 120 },        // حداکثر زاویه محور X
+                minScale: { type: 'number', default: 0.02 },
+                maxScale: { type: 'number', default: 1.0 },
+                lockThreshold: { type: 'number', default: 6 },     // حداقل پیکسل برای تشخیص جهت غالب
+                noPitchLimit: { type: 'boolean', default: false }, // اگر true باشد محدودیت Pitch برداشته می‌شود
+                zoomLerp: { type: 'number', default: 0.18 }        // نرمی زوم (0..1)
+            },
+            init: function () {
+                this.dragging = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.startX = 0;
+                this.startY = 0;
+                this.axisLock = null; // 'horizontal' | 'vertical'
+                // اطمینان از مقدار اولیه چرخش معتبر
+                const initRot = this.el.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+                this.rotation = { x: Number(initRot.x) || 0, y: Number(initRot.y) || 0, z: Number(initRot.z) || 0 };
+                // pinch
+                this.activePointers = new Map();
+                this.isPinching = false;
+                this.startPinchDistance = 0;
+                this.originalScale = this.el.object3D.scale.clone();
+                this.originalScaleValue = (this.originalScale.x + this.originalScale.y + this.originalScale.z) / 3;
+                this.smoothScale = this.originalScaleValue; // برای lerp نرم در هنگام pinch
+                this.onPointerDown = this.onPointerDown.bind(this);
+                this.onPointerMove = this.onPointerMove.bind(this);
+                this.onPointerUp = this.onPointerUp.bind(this);
+                this.sceneEl = this.el.sceneEl;
+                if (this.sceneEl.canvas) this.addListeners();
+                this.sceneEl.addEventListener('render-target-loaded', () => this.addListeners());
+            },
+            addListeners: function () {
+                const c = this.sceneEl.canvas;
+                if (!c) return;
+                c.addEventListener('pointerdown', this.onPointerDown, { passive: true });
+                // همچنین روی window گوش کنیم تا لمس دوم بیرون از بوم هم ثبت شود
+                window.addEventListener('pointerdown', this.onPointerDown, { passive: true });
+                // throttle pointermove to once per frame
+                this._rafScheduled = false;
+                const onMove = (e) => { this._lastMoveEvent = e; if (!this._rafScheduled) { this._rafScheduled = true; requestAnimationFrame(() => { this._rafScheduled = false; if (this._lastMoveEvent) this.onPointerMove(this._lastMoveEvent); }); } };
+                this._boundOnMove = onMove;
+                window.addEventListener('pointermove', this._boundOnMove, { passive: true });
+                window.addEventListener('pointerup', this.onPointerUp, { passive: true });
+                window.addEventListener('pointercancel', this.onPointerUp, { passive: true });
+            },
+            remove: function () {
+                const c = this.sceneEl && this.sceneEl.canvas;
+                if (!c) return;
+                c.removeEventListener('pointerdown', this.onPointerDown);
+                window.removeEventListener('pointerdown', this.onPointerDown);
+                window.removeEventListener('pointermove', this._boundOnMove || this.onPointerMove);
+                window.removeEventListener('pointerup', this.onPointerUp);
+                window.removeEventListener('pointercancel', this.onPointerUp);
+            },
+            onPointerDown: function (e) {
+                try { if (e.target && e.target.setPointerCapture) e.target.setPointerCapture(e.pointerId); } catch { }
+                this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (this.activePointers.size === 1) {
+                    this.dragging = true;
+                    this.isPinching = false;
+                    this.lastX = this.startX = e.clientX;
+                    this.lastY = this.startY = e.clientY;
+                    this.axisLock = null; // ریست قفل محور برای ژست جدید
+                    // همگام‌سازی چرخش داخلی با مقدار فعلی المان برای جلوگیری از پرش اول ژست
+                    try {
+                        const curRot = this.el.getAttribute('rotation');
+                        if (curRot && isFinite(curRot.x) && isFinite(curRot.y) && isFinite(curRot.z)) {
+                            this.rotation = { x: Number(curRot.x) || 0, y: Number(curRot.y) || 0, z: Number(curRot.z) || 0 };
+                        }
+                    } catch { }
+                } else if (this.activePointers.size === 2) {
+                    this.dragging = false;
+                    this.isPinching = true;
+                    const pts = Array.from(this.activePointers.values());
+                    this.startPinchDistance = this.distance(pts[0], pts[1]);
+                    // baseline یکنواخت از مقیاس فعلی (میانگین سه محور در صورت ناهمگنی)
+                    const s = this.el.object3D.scale;
+                    const uniform = (s.x + s.y + s.z) / 3;
+                    this.originalScaleValue = isFinite(uniform) ? uniform : (s.x || 1);
+                    this.smoothScale = this.originalScaleValue;
+                }
+            },
+            onPointerMove: function (e) {
+                if (!this.activePointers.has(e.pointerId)) return;
+                this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+                if (this.isPinching && this.activePointers.size === 2) {
+                    const pts = Array.from(this.activePointers.values());
+                    const newDist = this.distance(pts[0], pts[1]);
+                    if (this.startPinchDistance > 0) {
+                        // محاسبه هدف یکنواخت و اعمال تدریجی برای جلوگیری از "جامپ"
+                        let scaleFactor = newDist / this.startPinchDistance;
+                        // محافظت در برابر نویز خیلی کوچک روی فاصله‌ها
+                        if (!isFinite(scaleFactor) || scaleFactor <= 0) scaleFactor = 1;
+                        const targetVal = this.originalScaleValue * scaleFactor;
+                        const clamped = Math.min(this.data.maxScale, Math.max(this.data.minScale, targetVal));
+                        // lerp نرم
+                        this.smoothScale = this.smoothScale + (clamped - this.smoothScale) * this.data.zoomLerp;
+                        const s = this.smoothScale;
+                        this.el.object3D.scale.set(s, s, s);
+                    }
+                    return;
+                }
+
+                if (this.dragging && this.activePointers.size === 1) {
+                    const dx = e.clientX - this.lastX;
+                    const dy = e.clientY - this.lastY;
+                    const totalDx = e.clientX - this.startX;
+                    const totalDy = e.clientY - this.startY;
+
+                    // تعیین قفل محور در صورت عبور از آستانه
+                    if (!this.axisLock) {
+                        if (Math.abs(totalDx) >= this.data.lockThreshold || Math.abs(totalDy) >= this.data.lockThreshold) {
+                            this.axisLock = (Math.abs(totalDx) > Math.abs(totalDy)) ? 'horizontal' : 'vertical';
+                        } else {
+                            // هنوز جهت مشخص نیست، صبر کن
+                            return;
+                        }
+                    }
+
+                    if (this.axisLock === 'horizontal') {
+                        // معکوس کردن جهت افقی: کشیدن به چپ، مدل هم به چپ برود
+                        this.rotation.y += dx * this.data.speed;
+                    } else if (this.axisLock === 'vertical') {
+                        // نگاشت شهودی پایدار: وقتی مدل پشت به دوربین است جهت برعکس نشود
+                        // با توجه به Yaw فعلی (rotation.y) اگر بین 90..270 باشد، علامت dy را معکوس کن
+                        let yaw = (this.rotation.y % 360 + 360) % 360; // 0..359
+                        const flip = (yaw > 90 && yaw < 270) ? -1 : 1;
+                        this.rotation.x += (dy * this.data.verticalSpeed * flip);
+                        if (!this.data.noPitchLimit) {
+                            if (this.rotation.x > this.data.maxPitch) this.rotation.x = this.data.maxPitch;
+                            if (this.rotation.x < this.data.minPitch) this.rotation.x = this.data.minPitch;
+                        } else {
+                            // نرمال‌سازی نرم تا مقدار خیلی بزرگ نشود
+                            if (this.rotation.x > 10000 || this.rotation.x < -10000) {
+                                this.rotation.x = this.rotation.x % 360;
+                            }
+                        }
+                    }
+
+                    // تضمین اعداد معتبر قبل از setAttribute
+                    const safeRot = {
+                        x: isFinite(this.rotation.x) ? this.rotation.x : 0,
+                        y: isFinite(this.rotation.y) ? this.rotation.y : 0,
+                        z: isFinite(this.rotation.z) ? this.rotation.z : 0
+                    };
+                    this.el.setAttribute('rotation', safeRot);
+                    this.lastX = e.clientX;
+                    this.lastY = e.clientY;
+                }
+            },
+            onPointerUp: function (e) {
+                this.activePointers.delete(e.pointerId);
+                if (this.activePointers.size < 2) this.isPinching = false;
+                if (this.activePointers.size === 1) {
+                    const remaining = Array.from(this.activePointers.values())[0];
+                    this.lastX = remaining.x;
+                    this.lastY = remaining.y;
+                    this.dragging = true;
+                }
+                if (this.activePointers.size === 0) {
+                    this.dragging = false;
+                    this.axisLock = null; // آزادسازی قفل برای ژست بعدی
+                    // همگام‌سازی مقدار نرم با مقیاس فعلی برای جلوگیری از جامپ در ژست بعدی
+                    try {
+                        const s = this.el.object3D.scale;
+                        const uniform = (s.x + s.y + s.z) / 3;
+                        if (isFinite(uniform)) {
+                            this.smoothScale = uniform;
+                            this.originalScaleValue = uniform;
+                        }
+                    } catch { }
+                }
+            },
+            distance: function (p1, p2) { const dx = p1.x - p2.x; const dy = p1.y - p2.y; return Math.sqrt(dx * dx + dy * dy); }
+        });
+        // کامپوننت نرم‌کننده ساده (EMA)
+        AFRAME.registerComponent('pose-smoother', {
+            schema: {
+                positionLerp: { type: 'number', default: 0.15 }, // 0..1 (بزرگتر=رسیدن سریعتر، کوچکتر=نرم‌تر)
+                rotationSlerp: { type: 'number', default: 0.2 },
+                scaleLerp: { type: 'number', default: 0.2 }
+            },
+            init: function () {
+                this._targetPosition = new THREE.Vector3();
+                this._targetQuaternion = new THREE.Quaternion();
+                this._targetScale = new THREE.Vector3();
+                this._tempQuat = new THREE.Quaternion();
+                // اگر گره والد یک mindar-image-target است بهتر است smoothing روی مدل (فرزند) اعمال شود
+                // فرض ما این است که این کامپوننت روی خود مدل قرار می‌گیرد
+            },
+            tick: function () {
+                const obj = this.el.object3D;
+                // مقادیر هدف همان مقادیر فعلی هستند (MindAR ممکن است همین فریم آنها را آپدیت کرده باشد)
+                // بنابراین ابتدا آنها را می‌گیریم (clone) سپس obj را به سمت آنها حرکت می‌دهیم.
+                this._targetPosition.copy(obj.position);
+                this._targetQuaternion.copy(obj.quaternion);
+                this._targetScale.copy(obj.scale);
+                if (!this._lastPosition) {
+                    // اولین فریم: مقدار اولیه را ذخیره می‌کنیم
+                    this._lastPosition = obj.position.clone();
+                    this._lastQuaternion = obj.quaternion.clone();
+                    this._lastScale = obj.scale.clone();
+                    return;
+                }
+                // به جای استفاده مستقیم از target (که مساوی مقدار لحظه‌ای است) ما last را به سمت target lerp می‌کنیم
+                this._lastPosition.lerp(this._targetPosition, this.data.positionLerp);
+                this._lastQuaternion.slerp(this._targetQuaternion, this.data.rotationSlerp);
+                this._lastScale.lerp(this._targetScale, this.data.scaleLerp);
+                // اعمال نتایج نرم‌شده
+                obj.position.copy(this._lastPosition);
+                obj.quaternion.copy(this._lastQuaternion);
+                obj.scale.copy(this._lastScale);
+            }
+        });
+
+        // One Euro Filter (سافتنر تطبیقی استاندارد)
+        // مرجع: https://cristal.univ-lille.fr/~casiez/1euro/
+        AFRAME.registerComponent('one-euro-smoother', {
+            schema: {
+                // موقعیت
+                minCutoffPos: { type: 'number', default: 1.0 },
+                betaPos: { type: 'number', default: 0.02 },
+                dCutoffPos: { type: 'number', default: 1.0 },
+                // چرخش
+                minCutoffRot: { type: 'number', default: 1.1 },
+                betaRot: { type: 'number', default: 0.02 },
+                dCutoffRot: { type: 'number', default: 1.0 }
+            },
+            init: function () {
+                this._lastTime = null;
+                this._rawPosPrev = null; this._rawQuatPrev = null;
+                this._posHat = null; this._quatHat = null;
+                this._dPosHat = new THREE.Vector3(0, 0, 0);
+                this._alphaCache = {}; // اختیاری
+            },
+            _alpha: function (fc, dt) { const tau = 1.0 / (2 * Math.PI * fc); return 1.0 / (1.0 + tau / dt); },
+            _lowpassVec: function (prev, cur, a) { return prev ? prev.clone().lerp(cur, a) : cur.clone(); },
+            _slerpQuat: function (qa, qb, a) { const out = qa.clone(); out.slerp(qb, Math.max(0, Math.min(1, a))); return out; },
+            tick: function (t, dtMs) {
+                const obj = this.el.object3D; if (!obj) return;
+                const now = performance.now();
+                const dt = Math.max(1e-3, (this._lastTime ? (now - this._lastTime) : (dtMs || 16.7)) / 1000);
+                this._lastTime = now;
+
+                // --- Position ---
+                const curPos = obj.position.clone();
+                if (!this._rawPosPrev) this._rawPosPrev = curPos.clone();
+                // مشتق تقریبی
+                const dpos = curPos.clone().sub(this._rawPosPrev).divideScalar(dt);
+                // فیلتر مشتق با dCutoff
+                const aD = this._alpha(this.data.dCutoffPos, dt);
+                this._dPosHat = this._lowpassVec(this._dPosHat, dpos, aD);
+                const speed = this._dPosHat.length();
+                const cutoffPos = this.data.minCutoffPos + this.data.betaPos * speed;
+                const aPos = this._alpha(cutoffPos, dt);
+                this._posHat = this._lowpassVec(this._posHat || curPos, curPos, aPos);
+                obj.position.copy(this._posHat);
+                this._rawPosPrev.copy(curPos);
+
+                // --- Rotation --- (تقریب محور-زاویه)
+                const curQuat = obj.quaternion.clone();
+                if (!this._quatHat) this._quatHat = curQuat.clone();
+                if (!this._rawQuatPrev) this._rawQuatPrev = curQuat.clone();
+                // q_rel = prevRaw^-1 * curRaw
+                const invPrev = this._rawQuatPrev.clone().invert();
+                const qRel = invPrev.multiply(curQuat);
+                const angle = 2 * Math.acos(Math.min(1, Math.max(-1, qRel.w)));
+                const angDegPerSec = (angle / Math.max(1e-4, dt));
+                const cutoffRot = this.data.minCutoffRot + this.data.betaRot * angDegPerSec;
+                const aRot = this._alpha(cutoffRot, dt);
+                this._quatHat = this._slerpQuat(this._quatHat, curQuat, aRot);
+                obj.quaternion.copy(this._quatHat);
+                this._rawQuatPrev.copy(curQuat);
+            }
+        });
+    </script>
+    <!-- Performance hints: preconnect & preload -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+</head>
+
+<body>
+    <div id="modelProgress" class="model-progress hidden" aria-live="polite" aria-atomic="true">
+        <div class="model-progress__bar"><span class="model-progress__fill" style="width:0%"></span></div>
+        <div class="model-progress__percent" id="modelProgressPercent">0%</div>
+    </div>
+    <button id="helpBtn" class="ar-help-btn" aria-controls="helpPanel" aria-expanded="false"
+        aria-haspopup="dialog">Help</button>
+    <div id="helpPanel" class="ar-help-panel" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="ar-help-panel__inner">
+            <h2>How to use AR</h2>
+            <ul class="ar-help-list">
+                <li><strong>Start:</strong> Point the camera at the printed marker or reference image until the 3D model
+                    appears.</li>
+                <li><strong>Rotate:</strong> One finger drag — horizontal drag rotates horizontally, vertical drag
+                    rotates vertically.</li>
+                <li><strong>Zoom:</strong> Pinch with two fingers to scale smoothly; avoid over-scaling for best
+                    tracking.</li>
+                <li><strong>Reset:</strong> If the model drifts or tilts, tap “Reset model.”</li>
+                <li><strong>Lighting:</strong> Use even lighting and non-reflective backgrounds if detection is slow.
+                </li>
+            </ul>
+            <button class="ar-help-close" id="closeHelp" aria-label="Close help">✕</button>
+        </div>
+    </div>
+    <div class="ar-bottom-controls" style="will-change: opacity, transform">
+        <button id="resetBtn" class="ar-reset-btn" title="Reset model" style="will-change: transform, opacity">Reset
+            model</button>
+        <button id="playAnimBtn" class="ar-play-btn" title="Play animation" style="will-change: transform, opacity">Play
+            animation</button>
+    </div>
+    <!-- filterMinCF و filterBeta پارامترهای داخلی فیلتر کالمن MindAR هستند؛ اگر هنوز لرزش بود filterMinCF را کوچک‌تر (مثلا 0.00005) و اگر مدل کند شد بزرگ‌تر کنید. -->
+    <div id="arBlocker" class="ar-blocker hidden" role="alert" aria-live="assertive">
+        <h1>Camera access is required</h1>
+        <p id="arBlockerMsg">Allow camera access to start the AR experience.</p>
+        <div class="tips" id="arBlockerTips">On iPad: Settings → Safari → Camera, enable access or open the page over
+            HTTPS.</div>
+        <button id="retryAR" type="button">Try again</button>
+    </div>
+    <a-scene id="arScene" class="ar-hidden"
+        mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20260214-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;"
+        color-space="sRGB"
+        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance"
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-assets>
+            <a-asset-item id="castingWheel" src="assets/Gltf/model.glb?v=20260214-01"></a-asset-item>
+        </a-assets>
+        <!-- Former secondary models removed to reduce load size -->
+        <!-- (Removed secondary heavy models) -->
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <!-- Key lights to improve PBR look -->
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
+        <a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
+        <!-- Targets 0,1,2,3,6 عمداً بدون مدل تا فقط 4 و 5 نمایش داشته باشند -->
+        <a-entity mindar-image-target="targetIndex: 0"></a-entity>
+        <a-entity mindar-image-target="targetIndex: 1"></a-entity>
+        <a-entity mindar-image-target="targetIndex: 2"></a-entity>
+        <a-entity mindar-image-target="targetIndex: 3"></a-entity>
+        <!-- Anchor 4 removed as part of feature reduction -->
+        <a-entity id="anchor5" mindar-image-target="targetIndex: 5">
+            <!-- DEBUG: اعمال چرخش عجیب برای اینکه حتماً تفاوت دیده شود -->
+            <a-entity id="wheelContainer" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
+                drag-rotate="noPitchLimit: true; minScale: 0.06; maxScale: 1.2"
+                micro-stabilizer="posEps: 0.0045; rotEpsDeg: 1.2; lerp: 0.08; slerp: 0.08; maxStepPos: 0.008; maxStepDeg: 3.5"
+                data-init-rot="0 0 0" data-init-scale="0.375 0.375 0.375" data-init-pos="0 0 0">
+                <a-entity geometry="primitive: circle; radius: 0.22; segments: 24" rotation="-90 0 0"
+                    position="0 -0.001 0"
+                    material="shader: flat; color: #000; opacity: 0.22; transparent: true"></a-entity>
+                <a-entity id="wheelModel" gltf-optimized="src: #castingWheel" rotation="-90 180 0"
+                    pose-smoother="positionLerp: 0.04; rotationSlerp: 0.06; scaleLerp: 0.08"
+                    one-euro-smoother="minCutoffPos: 1.0; betaPos: 0.03; dCutoffPos: 1.0; minCutoffRot: 1.1; betaRot: 0.03; dCutoffRot: 1.0"></a-entity>
+            </a-entity>
+        </a-entity>
+        <a-entity mindar-image-target="targetIndex: 6"></a-entity>
+    </a-scene>
+    <script>
+        // Show AR controls and help button after scene is loaded and ready
+        (function () {
+            const controls = document.querySelector('.ar-bottom-controls');
+            const helpBtn = document.querySelector('.ar-help-btn');
+            if (!controls && !helpBtn) return;
+
+            function showControls() {
+                if (controls) controls.classList.add('visible');
+                if (helpBtn) helpBtn.classList.add('visible');
+            }
+
+            // Hide help button initially
+            if (helpBtn) {
+                helpBtn.style.opacity = '0';
+                helpBtn.style.visibility = 'hidden';
+                helpBtn.style.transition = 'opacity 0.3s ease, visibility 0.3s ease';
+            }
+
+            // Listen for when the AR scene is fully loaded and rendered
+            const arScene = document.getElementById('arScene');
+            if (arScene) {
+                if (arScene.hasLoaded) {
+                    // Scene already loaded, show controls immediately
+                    setTimeout(showControls, 300);
+                } else {
+                    // Wait for scene to load, then show controls
+                    arScene.addEventListener('loaded', () => {
+                        setTimeout(showControls, 300);
+                    }, { once: true });
+                }
+            }
+
+            // Show help button when .visible is added
+            if (helpBtn) {
+                const observer = new MutationObserver(() => {
+                    if (helpBtn.classList.contains('visible')) {
+                        helpBtn.style.opacity = '1';
+                        helpBtn.style.visibility = 'visible';
+                    }
+                });
+                observer.observe(helpBtn, { attributes: true });
+            }
+        })();
+    </script>
+    <script>
+        // Snap model rotations: only adjust axes that aren't multiples of 90° so the model sits neatly on the target
+        (function () {
+            function isFiniteNumber(n) { return typeof n === 'number' && isFinite(n); }
+            function isMultipleOf90(v) {
+                if (!isFiniteNumber(v)) return true;
+                const snapped = Math.round(v / 90) * 90;
+                return Math.abs(v - snapped) < 1e-3;
+            }
+            function snapTo90(v) { return Math.round(v / 90) * 90; }
+
+            function snapElRotationById(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const apply = () => {
+                    try {
+                        const rot = el.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+                        const newRot = {
+                            x: isMultipleOf90(rot.x) ? rot.x : snapTo90(rot.x),
+                            y: isMultipleOf90(rot.y) ? rot.y : snapTo90(rot.y),
+                            z: isMultipleOf90(rot.z) ? rot.z : snapTo90(rot.z)
+                        };
+                        el.setAttribute('rotation', newRot);
+                    } catch (e) { /* no-op */ }
+                };
+                if (el.hasLoaded) apply(); else el.addEventListener('loaded', apply, { once: true });
+            }
+
+            // Apply to wheel model only
+            snapElRotationById('wheelModel');
+        })();
+    </script>
+    <script>
+        // Renderer quality & GLTF enhancements (MindAR scene)
+        (function () {
+            const sceneEl = document.getElementById('arScene');
+            if (!sceneEl) return;
+            // Optimized glTF loader with Meshopt + KTX2 (shares A-Frame's THREE, avoids extra instances)
+            AFRAME.registerComponent('gltf-optimized', {
+                schema: { src: { type: 'asset' } },
+                init() {
+                    const el = this.el; const sceneEl = el.sceneEl; this._obj = null;
+                    const THREE_VER = '0.158.0';
+                    const loadScriptOnce = (url, check) => new Promise((resolve, reject) => {
+                        try { if (check && check()) return resolve(); } catch { }
+                        const s = document.createElement('script');
+                        s.src = url;
+                        s.async = true;
+                        s.crossOrigin = 'anonymous';
+                        s.onload = () => resolve();
+                        s.onerror = (e) => reject(e);
+                        document.head.appendChild(s);
+                    });
+                    const resolveSrc = (src) => {
+                        if (!src) return null;
+                        if (typeof src === 'string' && src.trim().startsWith('#')) {
+                            const elAsset = document.querySelector(src.trim());
+                            const val = elAsset && (elAsset.getAttribute('src') || elAsset.src || elAsset.href);
+                            return val || null;
+                        }
+                        return src;
+                    };
+                    const load = async () => {
+                        try {
+                            performance.mark('gltfLoaders:start');
+                            // Only load external loaders if not already present (reduces multiple-THREE warnings)
+                            const needGLTF = () => typeof THREE.GLTFLoader === 'undefined';
+                            const needKTX2 = () => typeof THREE.KTX2Loader === 'undefined';
+                            const promises = [];
+                            if (needGLTF()) promises.push(loadScriptOnce(`https://cdn.jsdelivr.net/npm/three@${THREE_VER}/examples/js/loaders/GLTFLoader.js`, () => !!THREE.GLTFLoader));
+                            if (needKTX2()) promises.push(loadScriptOnce(`https://cdn.jsdelivr.net/npm/three@${THREE_VER}/examples/js/loaders/KTX2Loader.js`, () => !!THREE.KTX2Loader));
+                            // Meshopt is optional; skip if it fails
+                            promises.push(
+                                loadScriptOnce('https://unpkg.com/meshoptimizer@0.21.1/meshopt_decoder.js', () => typeof MeshoptDecoder !== 'undefined')
+                                    .catch(() => null)
+                            );
+                            await Promise.all(promises);
+                            performance.mark('gltfLoaders:end');
+                            performance.measure('gltfLoaders', 'gltfLoaders:start', 'gltfLoaders:end');
+                            const url = resolveSrc(this.data.src); if (!url) return;
+                            const loader = new THREE.GLTFLoader();
+                            try {
+                                const ktx2 = new THREE.KTX2Loader()
+                                    .setTranscoderPath(`https://cdn.jsdelivr.net/npm/three@${THREE_VER}/examples/js/libs/basis/`)
+                                    .detectSupport(sceneEl.renderer);
+                                loader.setKTX2Loader(ktx2);
+                            } catch (e) { console.warn('KTX2 init skipped', e); }
+                            if (typeof MeshoptDecoder !== 'undefined') loader.setMeshoptDecoder(MeshoptDecoder);
+                            performance.mark('gltf:modelFetch:start');
+                            loader.load(
+                                url,
+                                (gltf) => {
+                                    performance.mark('gltf:modelFetch:end');
+                                    performance.measure('gltfModelFetch', 'gltf:modelFetch:start', 'gltf:modelFetch:end');
+                                    const obj = gltf.scene || (gltf.scenes && gltf.scenes[0]); if (!obj) return;
+                                    try { obj.animations = gltf.animations || []; } catch { }
+                                    this._obj = obj;
+                                    el.setObject3D('mesh', obj);
+                                    el.emit('model-progress', { percent: 100 });
+                                    el.emit('model-loaded', { format: 'gltf', model: obj, animations: gltf.animations || [] });
+                                    try {
+                                        const loadersEntry = performance.getEntriesByName('gltfLoaders')[0];
+                                        const modelFetchEntry = performance.getEntriesByName('gltfModelFetch')[0];
+                                        if (loadersEntry && modelFetchEntry) {
+                                            console.log('%c[Perf] Loaders(ms):', 'color:#0af', loadersEntry.duration.toFixed(1), ' Model(ms):', modelFetchEntry.duration.toFixed(1));
+                                        }
+                                    } catch { }
+                                },
+                                (xhr) => {
+                                    try {
+                                        if (!performance.getEntriesByName('gltf:firstProgress').length) {
+                                            performance.mark('gltf:firstProgress');
+                                            performance.measure('gltfTTFP', 'gltf:modelFetch:start', 'gltf:firstProgress');
+                                            const ttfp = performance.getEntriesByName('gltfTTFP')[0];
+                                            if (ttfp) console.log('%c[Perf] GLB TTFP(ms):', 'color:#0af', ttfp.duration.toFixed(1));
+                                        }
+                                        if (xhr.lengthComputable) {
+                                            const percent = Math.min(100, (xhr.loaded / xhr.total) * 100);
+                                            el.emit('model-progress', { percent });
+                                        } else if (xhr.loaded && !xhr.total) {
+                                            const pseudo = Math.min(90, (xhr.loaded / (30 * 1024 * 1024)) * 100);
+                                            el.emit('model-progress', { percent: pseudo });
+                                        }
+                                    } catch { }
+                                },
+                                (err) => {
+                                    console.warn('gltf-optimized load error', err);
+                                    el.emit('model-error', { error: err });
+                                }
+                            );
+                        } catch (e) { console.warn('gltf-optimized load failed', e); }
+                    };
+                    if (sceneEl.hasLoaded) load(); else sceneEl.addEventListener('loaded', load, { once: true });
+                },
+                remove() { try { this.el.removeObject3D('mesh'); } catch { } }
+            });
+            function configure() {
+                const r = sceneEl.renderer; if (!r) return;
+                try {
+                    // Balanced tone mapping between natural and cinematic
+                    r.toneMapping = THREE.ACESFilmicToneMapping;
+                    r.toneMappingExposure = 0.98; // کمی پایین‌تر برای جلوگیری از highlight زرد
+                    // تضمین فضای رنگ خروجی sRGB (سه.js r152)
+                    if ('outputColorSpace' in r) r.outputColorSpace = THREE.SRGBColorSpace;
+                    // Shadow mapping disabled for better colors
+                    r.shadowMap.enabled = false;
+                } catch (e) { }
+            }
+            if (sceneEl.hasLoaded) configure(); else sceneEl.addEventListener('loaded', configure);
+
+            function enhanceModelById(id) {
+                const el = document.getElementById(id); if (!el) return;
+                el.addEventListener('model-loaded', (ev) => {
+                    const obj = ev.detail && ev.detail.model; if (!obj || !sceneEl.renderer) return;
+                    const maxAniso = sceneEl.renderer.capabilities.getMaxAnisotropy ? sceneEl.renderer.capabilities.getMaxAnisotropy() : 4;
+                    const isWheel = (id === 'wheelModel');
+                    const tmpHSL = { h: 0, s: 0, l: 0 };
+                    const isOrange = (color) => {
+                        try { color.getHSL(tmpHSL); } catch { return false; }
+                        // بازه حدودی نارنجی: ~15°..45° → 0.042..0.125
+                        return tmpHSL.h >= 0.042 && tmpHSL.h <= 0.13;
+                    };
+                    obj.traverse(n => {
+                        if (n.isMesh) {
+                            // Shadow disabled for better color visibility
+                            // n.castShadow = true; n.receiveShadow = true;
+                            const mats = Array.isArray(n.material) ? n.material : [n.material];
+                            mats.forEach(m => {
+                                if (!m) return;
+                                // Balanced material settings for clear but natural colors
+                                if (m.map && 'colorSpace' in m.map) { m.map.colorSpace = THREE.SRGBColorSpace; m.map.needsUpdate = true; }
+                                if (typeof m.envMapIntensity === 'number') m.envMapIntensity = Math.max(0.9, m.envMapIntensity || 0.9);
+                                if (typeof m.metalness === 'number') {
+                                    // چرخ فلزی را حفظ کن؛ برای سطوح نارنجی (غیر فلزی) metalness را کم کن
+                                    if (isWheel) {
+                                        m.metalness = Math.min(0.6, Math.max(0.2, m.metalness));
+                                    } else {
+                                        if (m.color && isOrange(m.color)) m.metalness = Math.min(m.metalness, 0.15);
+                                        else m.metalness = Math.min(0.5, m.metalness);
+                                    }
+                                }
+                                if (typeof m.roughness === 'number') {
+                                    // کمی زبری بالاتر به حفظ اشباع نارنجی کمک می‌کند
+                                    if (!isWheel && m.color && isOrange(m.color)) m.roughness = Math.max(0.38, m.roughness);
+                                    else m.roughness = Math.max(0.3, m.roughness);
+                                }
+                                ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(k => {
+                                    if (m[k] && typeof m[k].anisotropy === 'number') {
+                                        m[k].anisotropy = Math.max(m[k].anisotropy || 0, maxAniso);
+                                    }
+                                });
+                                // اصلاح جزئی رنگ نارنجی به سمت قرمزتر و اشباع‌تر تا از زردی جلوگیری شود
+                                if (!isWheel && m.color && isOrange(m.color)) {
+                                    try {
+                                        m.color.getHSL(tmpHSL);
+                                        const h = Math.max(0, tmpHSL.h - 0.012); // کمی به سمت قرمز
+                                        const s = Math.min(1, tmpHSL.s * 1.06);
+                                        const l = Math.max(0, Math.min(1, tmpHSL.l * 0.98));
+                                        m.color.setHSL(h, s, l);
+                                    } catch { }
+                                }
+                                m.needsUpdate = true;
+                            });
+                        }
+                    });
+                });
+            }
+            enhanceModelById('wheelModel');
+        })();
+    </script>
+    <script>
+        // Display glTF model load progress in the on-screen bar
+        (function () {
+            const overlay = document.getElementById('modelProgress');
+            const percentEl = document.getElementById('modelProgressPercent');
+            const fillEl = overlay ? overlay.querySelector('.model-progress__fill') : null;
+            if (!overlay || !percentEl || !fillEl) return;
+
+            function show() { overlay.classList.remove('hidden'); }
+            function hide() { overlay.classList.add('hidden'); }
+
+            function updateProgress(val) {
+                const capped = Math.min(100, Math.max(0, val || 0));
+                fillEl.style.width = capped.toFixed(1) + '%';
+                percentEl.textContent = Math.floor(capped) + '%';
+            }
+            function attach(el) {
+                if (!el || el.__progressAttached) return; el.__progressAttached = true;
+                el.addEventListener('model-progress', e => { show(); updateProgress(e.detail && e.detail.percent); });
+                el.addEventListener('model-loaded', () => {
+                    show(); updateProgress(100);
+                    percentEl.classList.add('done');
+                    setTimeout(() => { hide(); percentEl.classList.remove('done'); }, 1400);
+                });
+                el.addEventListener('model-error', () => {
+                    show(); fillEl.style.width = '100%'; percentEl.textContent = 'Load error';
+                });
+            }
+            // موجود فعلی
+            attach(document.getElementById('wheelModel'));
+            // مراقبت برای مدل Free AR که بعدا ایجاد می‌شود (id="gltf")
+            const mo = new MutationObserver(muts => {
+                for (const m of muts) {
+                    for (const n of m.addedNodes) {
+                        if (n.nodeType === 1) {
+                            if (n.id === 'gltf') attach(n);
+                            // در صورت ایجاد درون wrapper
+                            const g = n.querySelector && n.querySelector('#gltf');
+                            if (g) attach(g);
+                        }
+                    }
+                }
+            });
+            try { mo.observe(document.body, { childList: true, subtree: true }); } catch { }
+        })();
+    </script>
+    <script>
+        // HDRI Environment map (shared between MindAR and Free AR scenes)
+        (function () {
+            const HDRI_URL = 'https://rawcdn.githack.com/mrdoob/three.js/r152/examples/textures/equirectangular/royal_esplanade_1k.hdr';
+            const ENV = window.__ENV_STATE = window.__ENV_STATE || { ready: false, loading: false, waiters: [], envMap: null };
+
+            function applyEnvToScene(sceneEl) {
+                try { if (ENV.envMap && sceneEl && sceneEl.object3D) { sceneEl.object3D.environment = ENV.envMap; } } catch (e) { }
+            }
+
+            function notifyAll() {
+                const cbs = ENV.waiters.splice(0, ENV.waiters.length);
+                cbs.forEach(cb => { try { cb(); } catch { } });
+            }
+
+            function loadEnvWithRenderer(renderer) {
+                if (ENV.ready || ENV.loading) return;
+                ENV.loading = true;
+                try {
+                    const pmremGen = new THREE.PMREMGenerator(renderer);
+                    pmremGen.compileEquirectangularShader && pmremGen.compileEquirectangularShader();
+                    if (THREE.RGBELoader) {
+                        new THREE.RGBELoader()
+                            .setDataType(THREE.UnsignedByteType)
+                            .load(HDRI_URL, (hdrTex) => {
+                                try {
+                                    const envTex = pmremGen.fromEquirectangular(hdrTex).texture;
+                                    hdrTex.dispose && hdrTex.dispose();
+                                    pmremGen.dispose && pmremGen.dispose();
+                                    ENV.envMap = envTex; ENV.ready = true; ENV.loading = false; notifyAll();
+                                } catch (e) {
+                                    ENV.loading = false; console.warn('Failed to build PMREM from HDR', e);
+                                }
+                            }, undefined, (err) => {
+                                ENV.loading = false; console.warn('HDR load failed', err);
+                            });
+                    } else {
+                        // As a fallback (RGBELoader not available), skip HDR and keep default lighting
+                        ENV.loading = false;
+                    }
+                } catch (e) {
+                    ENV.loading = false; console.warn('ENV init failed', e);
+                }
+            }
+
+            function ensureEnv(sceneEl) {
+                if (!sceneEl) return;
+                if (ENV.ready) { applyEnvToScene(sceneEl); return; }
+                ENV.waiters.push(() => applyEnvToScene(sceneEl));
+                // Use this scene's renderer to build PMREM
+                if (!ENV.loading) {
+                    const tryInit = () => {
+                        const r = sceneEl.renderer;
+                        if (r) { loadEnvWithRenderer(r); } else { sceneEl.addEventListener('render-target-loaded', () => loadEnvWithRenderer(sceneEl.renderer), { once: true }); }
+                    };
+                    tryInit();
+                }
+            }
+
+            // Attach to MindAR scene when available
+            const arScene = document.getElementById('arScene');
+            if (arScene) { if (arScene.hasLoaded) ensureEnv(arScene); else arScene.addEventListener('loaded', () => ensureEnv(arScene), { once: true }); }
+
+            // Observe and attach to Free AR scene when created
+            const obs = new MutationObserver(() => {
+                const freeScene = document.getElementById('freeScene');
+                if (freeScene) {
+                    if (freeScene.hasLoaded) ensureEnv(freeScene); else freeScene.addEventListener('loaded', () => ensureEnv(freeScene), { once: true });
+                    obs.disconnect();
+                }
+            });
+            obs.observe(document.documentElement, { childList: true, subtree: true });
+
+            // Expose helper globally if needed elsewhere
+            window.__ensureEnvForScene = ensureEnv;
+        })();
+    </script>
+    <script>
+        // مدیریت پایداری نمایش مدل (حالت MindAR) + انیمیشن ورود
+        if (!window.FREE_MODE) (function () {
+            // Micro stabilizer: deadband + lerp/slerp on container to mask phone micro shakes
+            AFRAME.registerComponent('micro-stabilizer', {
+                schema: { posEps: { default: 0.002 }, rotEpsDeg: { default: 1.0 }, lerp: { default: 0.1 }, slerp: { default: 0.1 }, maxStepPos: { default: 0.0 }, maxStepDeg: { default: 0.0 } },
+                init() {
+                    this._lastPos = new THREE.Vector3();
+                    this._lastQuat = new THREE.Quaternion();
+                    this._inited = false;
+                    this._tmpPos = new THREE.Vector3();
+                    this._tmpQuat = new THREE.Quaternion();
+                    this._euler = new THREE.Euler();
+                    this.el.addEventListener('stabilizer-reset', () => {
+                        const o = this.el.object3D; if (!o) return;
+                        this._lastPos.copy(o.position); this._lastQuat.copy(o.quaternion); this._inited = true;
+                    });
+                },
+                tick() {
+                    const o = this.el.object3D; if (!o) return;
+                    if (!this._inited) { this._lastPos.copy(o.position); this._lastQuat.copy(o.quaternion); this._inited = true; return; }
+                    const s = this.data;
+                    // position deadband
+                    this._tmpPos.copy(o.position).sub(this._lastPos);
+                    // clamp sudden steps if requested
+                    if (s.maxStepPos && s.maxStepPos > 0) {
+                        const len = this._tmpPos.length();
+                        if (len > s.maxStepPos) {
+                            this._tmpPos.multiplyScalar(s.maxStepPos / len);
+                        }
+                    }
+                    if (Math.abs(this._tmpPos.x) < s.posEps) this._tmpPos.x = 0;
+                    if (Math.abs(this._tmpPos.y) < s.posEps) this._tmpPos.y = 0;
+                    if (Math.abs(this._tmpPos.z) < s.posEps) this._tmpPos.z = 0;
+                    const wantPos = this._lastPos.clone().add(this._tmpPos);
+                    o.position.lerp(wantPos, s.lerp);
+                    this._lastPos.copy(o.position);
+                    // rotation deadband in degrees (approx via small-angle)
+                    this._tmpQuat.copy(this._lastQuat).invert().multiply(o.quaternion);
+                    let angle = 2 * Math.acos(Math.min(1, Math.max(-1, this._tmpQuat.w))) * 180 / Math.PI;
+                    // clamp sudden rotation steps if requested
+                    if (s.maxStepDeg && s.maxStepDeg > 0 && angle > s.maxStepDeg) {
+                        // slerp from lastQuat towards target by a capped fraction that corresponds to maxStepDeg
+                        const frac = s.maxStepDeg / Math.max(angle, 1e-6);
+                        const capped = new THREE.Quaternion().copy(this._lastQuat).slerp(o.quaternion, frac);
+                        o.quaternion.copy(capped);
+                        // recompute residual relative to new o.quaternion for deadband check
+                        this._tmpQuat.copy(this._lastQuat).invert().multiply(o.quaternion);
+                        angle = 2 * Math.acos(Math.min(1, Math.max(-1, this._tmpQuat.w))) * 180 / Math.PI;
+                    }
+                    const wantQuat = (angle < s.rotEpsDeg) ? this._lastQuat : o.quaternion;
+                    o.quaternion.slerp(wantQuat, s.slerp);
+                    this._lastQuat.copy(o.quaternion);
+                }
+            });
+
+            const sceneEl = document.querySelector('a-scene');
+            const cam = document.querySelector('a-camera');
+            const anchor5 = document.getElementById('anchor5');
+            const wheelC = document.getElementById('wheelContainer');
+            const state = { active: null };
+
+            function parseScaleAttr(el) {
+                const sAttr = el.getAttribute('data-init-scale') || '0.05 0.05 0.05';
+                const [sx, sy, sz] = sAttr.split(/\s+/).map(Number);
+                const x = sx || 0.05; const y = sy || x; const z = sz || x; return { x, y, z };
+            }
+            function parsePosAttr(el) {
+                const pAttr = el.getAttribute('data-init-pos') || '0 0 0';
+                const [px, py, pz] = pAttr.split(/\s+/).map(Number);
+                const x = isFinite(px) ? px : 0; const y = isFinite(py) ? py : 0; const z = isFinite(pz) ? pz : 0; return { x, y, z };
+            }
+
+            function setLocalInitTRS(container) {
+                const rotAttr = container.getAttribute('data-init-rot') || '0 0 0';
+                const [rx, ry, rz] = rotAttr.split(/\s+/).map(Number);
+                const s = parseScaleAttr(container);
+                // برای حالت چسبیده به تصویر، موقعیت محلی را صفر نگه می‌داریم تا کاملاً روی تصویر بماند
+                container.setAttribute('rotation', { x: rx || 0, y: ry || 0, z: rz || 0 });
+                container.object3D.position.set(0, 0, 0);
+                container.object3D.scale.set(s.x, s.y, s.z);
+            }
+
+            function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+            function parseVec3(str) {
+                const parts = (str || '').trim().split(/\s+/).map(Number);
+                if (parts.length >= 3 && parts.every(n => isFinite(n))) { return { x: parts[0], y: parts[1], z: parts[2] }; }
+                return null;
+            }
+            function animateScaleIn(el, to, dur = 700) {
+                if (el.__animRAF) { cancelAnimationFrame(el.__animRAF); el.__animRAF = null; }
+                el.__appearing = true;
+                const start = performance.now();
+                const lift = parseFloat(el.getAttribute('data-appear-lift') || '0.015');
+                const baseY = el.object3D.position.y;
+                const fromY = baseY - Math.abs(lift);
+                el.object3D.scale.set(0, 0, 0);
+                el.object3D.position.y = fromY;
+                function step(now) {
+                    const t = Math.min(1, (now - start) / dur);
+                    const e = easeOutCubic(t);
+                    el.object3D.scale.set(to.x * e, to.y * e, to.z * e);
+                    el.object3D.position.y = fromY + (baseY - fromY) * e;
+                    if (t < 1) { el.__animRAF = requestAnimationFrame(step); } else { el.__animRAF = null; el.__appearing = false; }
+                }
+                el.__animRAF = requestAnimationFrame(step);
+            }
+
+            function setLookControls(active) {
+                if (!cam) return;
+                // Set just the 'enabled' property to avoid schema merge issues
+                try { cam.setAttribute('look-controls', 'enabled', !!active); } catch (e) { }
+            }
+
+            // Helper: locally toggle visibility for models (independent of other scripts)
+            function showOnlyLocal(targetShow, targetHide) {
+                try {
+                    if (targetHide) {
+                        targetHide.setAttribute('visible', false);
+                        if (targetHide.object3D) targetHide.object3D.visible = false;
+                        if (targetHide.style) targetHide.style.display = 'none';
+                    }
+                    if (targetShow) {
+                        targetShow.setAttribute('visible', true);
+                        if (targetShow.object3D) targetShow.object3D.visible = true;
+                        if (targetShow.style) targetShow.style.display = '';
+                    }
+                } catch (e) { }
+            }
+
+            function onFoundWheel() {
+                if (!wheelC || !anchor5) return;
+                try { wheelC.emit('stabilizer-reset'); } catch { }
+                if (wheelC.parentElement !== anchor5) anchor5.appendChild(wheelC);
+                setLocalInitTRS(wheelC);
+                try { anchor5.object3D.visible = true; } catch { }
+                anchor5.setAttribute('visible', true);
+                wheelC.object3D.visible = true;
+                wheelC.setAttribute('visible', true);
+                setLookControls(false);
+                const override = parseVec3(wheelC.getAttribute('data-appear-final-scale'));
+                const targetScale = override || parseScaleAttr(wheelC);
+                const durAttr = parseInt(wheelC.getAttribute('data-appear-dur') || '700', 10);
+                const dur = isFinite(durAttr) ? durAttr : 700;
+                if (wheelC.__animRAF) { try { cancelAnimationFrame(wheelC.__animRAF); } catch { } wheelC.__animRAF = null; }
+                wheelC.__appearing = false;
+                animateScaleIn(wheelC, targetScale, dur);
+                state.active = 5;
+            }
+
+            function onLostWheel() {
+                if (state.active !== 5) return;
+                if (!wheelC) return;
+                try { wheelC.object3D.visible = false; wheelC.setAttribute('visible', false); } catch { }
+                setLookControls(false);
+                if (wheelC.__animRAF) { try { cancelAnimationFrame(wheelC.__animRAF); } catch { } wheelC.__animRAF = null; }
+                wheelC.__appearing = false;
+                state.active = null;
+            }
+
+            if (anchor5) {
+                anchor5.addEventListener('targetFound', onFoundWheel);
+                anchor5.addEventListener('targetLost', onLostWheel);
+            }
+
+            // حذف ریست سخت استفاده‌نشده
+        })();
+    </script>
+
+    <script>
+        // Capability and camera permission checks (MindAR mode only)
+        if (!window.FREE_MODE) (function () {
+            const blocker = document.getElementById('arBlocker');
+            const scene = document.getElementById('arScene');
+            const retryBtn = document.getElementById('retryAR');
+            function show(msg, tips) {
+                if (msg) document.getElementById('arBlockerMsg').textContent = msg;
+                if (tips) document.getElementById('arBlockerTips').textContent = tips;
+                blocker.classList.remove('hidden');
+                scene.classList.add('ar-hidden');
+            }
+            function hide() { blocker.classList.add('hidden'); scene.classList.remove('ar-hidden'); }
+            async function probe() {
+                // HTTPS requirement: allow camera only on secure origins (or trusted local/LAN hosts)
+                const host = location.hostname;
+                const isPrivateLAN = /^192\.168\./.test(host) || /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+                const isLoopback = (host === 'localhost' || host === '127.0.0.1' || host === '::1');
+                if (location.protocol !== 'https:' && !(isLoopback || isPrivateLAN)) {
+                    show('This page must be opened over HTTPS to access the camera.', 'Use HTTPS or test on localhost / your LAN.');
+                    return;
+                }
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    show('Your browser does not support camera access.', 'Install the latest Safari or Chrome on iOS/Android.');
+                    return;
+                }
+                // Permission state
+                let state = 'prompt';
+                try { if (navigator.permissions && navigator.permissions.query) { const p = await navigator.permissions.query({ name: 'camera' }); state = p.state; } } catch (e) { }
+                if (state === 'denied') {
+                    show('Camera access is blocked.', 'Check Settings > Privacy > Camera or browser site settings, then refresh.');
+                    return;
+                }
+                try {
+                    const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    s.getTracks().forEach(t => t.stop());
+                } catch (err) {
+                    show('Camera access failed or was denied.', 'Allow the permission, then tap Try again.');
+                    return;
+                }
+                // WebGL check
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (!gl) { show('WebGL is not available on this device.', 'Enable WebGL in browser settings or try another device.'); return; }
+                hide();
+            }
+            retryBtn.addEventListener('click', probe);
+            // اجرای اولیه پس از load تا MindAR قبل از مجوز گیر نکند
+            if (document.readyState === 'complete') probe(); else window.addEventListener('load', probe);
+        })();
+    </script>
+    <script>
+        // عملکرد دکمه بازنشانی و اجرای انیمیشن (فقط در حالت MindAR)
+        if (!window.FREE_MODE) (function () {
+            const btn = document.getElementById('resetBtn');
+            const playBtn = document.getElementById('playAnimBtn');
+            // Secondary animation button removed with feature reduction
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                // ریست ساده: کانتینر چرخ را به TRS اولیه برگردان
+                const wheelC = document.getElementById('wheelContainer');
+                let targets = [wheelC].filter(c => c && c.object3D && c.object3D.visible);
+                if (!targets.length) targets = [wheelC].filter(Boolean);
+                targets.forEach(el => {
+                    // خواندن مقادیر اولیه از data-*
+                    const rotAttr = el.getAttribute('data-init-rot') || '0 0 0';
+                    const r = rotAttr.split(/\s+/).map(Number);
+                    const scaleAttr = el.getAttribute('data-init-scale') || '0.05 0.05 0.05';
+                    const s = scaleAttr.split(/\s+/).map(Number);
+                    const sx = s[0] || 0.05, sy = s[1] || sx, sz = s[2] || sx;
+                    el.setAttribute('rotation', { x: r[0] || 0, y: r[1] || 0, z: r[2] || 0 });
+                    el.object3D.scale.set(sx, sy, sz);
+                    // همگام‌سازی state داخلی درگ/سافتنر
+                    const dragComp = el.components['drag-rotate'];
+                    if (dragComp) {
+                        dragComp.rotation = { x: r[0] || 0, y: r[1] || 0, z: r[2] || 0 };
+                        dragComp.originalScale = el.object3D.scale.clone();
+                    }
+                    const smoothComp = el.components['pose-smoother'];
+                    if (smoothComp) {
+                        const obj = el.object3D;
+                        smoothComp._lastPosition = obj.position.clone();
+                        smoothComp._lastQuaternion = obj.quaternion.clone();
+                        smoothComp._lastScale = obj.scale.clone();
+                    }
+                    // توقف انیمیشن‌های مدلِ همین کانتینر
+                    el.querySelectorAll('a-gltf-model,[gltf-optimized]').forEach(m => { try { m.removeAttribute('animation-mixer'); } catch { } });
+                });
+
+                // reset micro-stabilizer baseline
+                try { wheelC && wheelC.emit('stabilizer-reset'); } catch { }
+
+                // بازخورد بصری
+                btn.classList.add('pulse');
+                setTimeout(() => btn.classList.remove('pulse'), 400);
+            });
+
+            // Helpers for load/animate/swap with exact orientation
+            function ensureLoaded(el, cb) {
+                if (!el) return;
+                // Prefer checking actual model presence over entity hasLoaded flag
+                const ready = el.getObject3D && el.getObject3D('mesh');
+                if (ready) cb(); else el.addEventListener('model-loaded', cb, { once: true });
+            }
+            function animateOnce(modelEl) {
+                try { modelEl.removeAttribute('animation-mixer'); } catch { }
+                modelEl.setAttribute('animation-mixer', 'clip: *; loop: once; repetitions: 1; timeScale: 1; clampWhenFinished: true;');
+                // Re-emit model-loaded to ensure animation-mixer binds when added after load
+                try { const obj = modelEl.getObject3D && modelEl.getObject3D('mesh'); if (obj) modelEl.emit('model-loaded', { format: 'gltf', model: obj, animations: obj.animations || [] }); } catch { }
+            }
+            function copyLocalTransform(fromEl, toEl) {
+                try {
+                    // Copy local rotation precisely
+                    if (fromEl.object3D && toEl.object3D) {
+                        toEl.object3D.quaternion.copy(fromEl.object3D.quaternion);
+                        toEl.object3D.position.copy(fromEl.object3D.position);
+                        toEl.object3D.scale.copy(fromEl.object3D.scale);
+                    }
+                } catch { }
+            }
+            function showOnly(targetShow, targetHide) {
+                try {
+                    if (targetHide) {
+                        targetHide.setAttribute('visible', false);
+                        if (targetHide.object3D) targetHide.object3D.visible = false;
+                        if (targetHide.style) targetHide.style.display = 'none';
+                    }
+                    if (targetShow) {
+                        targetShow.setAttribute('visible', true);
+                        if (targetShow.object3D) targetShow.object3D.visible = true;
+                        if (targetShow.style) targetShow.style.display = '';
+                    }
+                } catch { }
+            }
+
+            // اجرای انیمیشن glTF: دکمه انیمیشن روی مدل چرخ
+            if (playBtn) {
+                playBtn.addEventListener('click', () => {
+                    const wheelC = document.getElementById('wheelContainer');
+                    if (wheelC && wheelC.object3D?.visible) {
+                        const wm = document.getElementById('wheelModel');
+                        if (wm) ensureLoaded(wm, () => { animateOnce(wm); });
+                    }
+                    playBtn.classList.add('pulse');
+                    setTimeout(() => playBtn.classList.remove('pulse'), 300);
+                });
+            }
+        })();
+    </script>
+    <script>
+        // دکمه راهنما و پنل شیشه‌ای (در حالت FREE دکمه پنهان می‌شود)
+        (function () {
+            const btn = document.getElementById('helpBtn');
+            const panel = document.getElementById('helpPanel');
+            const closeBtn = document.getElementById('closeHelp');
+            let lastFocus = null;
+            if (!btn || !panel) return;
+            if (window.FREE_MODE) { btn.style.display = 'none'; panel.style.display = 'none'; return; }
+            function trapFocus(e) { if (!panel.classList.contains('open')) return; if (e.key !== 'Tab') return; const focusable = panel.querySelectorAll('button,[href],[tabindex]:not([tabindex="-1"])'); if (!focusable.length) return; const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }
+            function lockBody(lock) { document.body.classList.toggle('help-open', !!lock); }
+            function open() { lastFocus = document.activeElement; panel.classList.add('open'); lockBody(true); panel.setAttribute('aria-hidden', 'false'); btn.setAttribute('aria-expanded', 'true'); setTimeout(() => (closeBtn || panel).focus(), 20); document.addEventListener('keydown', trapFocus); }
+            function close() { panel.classList.remove('open'); lockBody(false); panel.setAttribute('aria-hidden', 'true'); btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('keydown', trapFocus); lastFocus && lastFocus.focus(); }
+            btn.addEventListener('click', () => panel.classList.contains('open') ? close() : open());
+            closeBtn && closeBtn.addEventListener('click', close);
+            panel.addEventListener('click', e => { if (e.target === panel) close(); });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('open')) close(); });
+        })();
+    </script>
+
+    <!-- حالت AR آزاد (WebXR hit-test + anchors) → در صورت FREE_MODE ساخته و فعال می‌شود -->
+    <script>
+        if (window.FREE_MODE) {
+            // برخی عناصر نسخه MindAR را پنهان کن
+            const resetBtn = document.getElementById('resetBtn');
+            const playBtn = document.getElementById('playAnimBtn');
+            const blocker = document.getElementById('arBlocker');
+            if (resetBtn) resetBtn.style.display = 'none';
+            if (playBtn) playBtn.style.display = 'none';
+            if (blocker) blocker.classList.add('hidden');
+            // صحنه MindAR را حذف کن تا با WebXR تداخل نداشته باشد
+            const oldScene = document.getElementById('arScene');
+            if (oldScene && oldScene.parentElement) oldScene.parentElement.removeChild(oldScene);
+
+            // استایل‌های مختصر برای Overlay و دکمه‌ها
+            const style = document.createElement('style');
+            style.textContent = `
+            .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px;pointer-events:none;z-index:5}
+            .controls{display:flex;gap:14px;pointer-events:auto;align-items:center;justify-content:center;flex-wrap:wrap}
+            .btn{background:linear-gradient(135deg,#233871,#2d4588);color:#fff;border:1px solid rgba(255,255,255,.25);padding:10px 16px;font-size:13px;border-radius:16px;cursor:pointer;box-shadow:0 10px 26px -10px rgba(0,0,0,.7)}
+            .btn.secondary{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3)}
+            .top-hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 12px;font-size:13px;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:5}
+            .reticle-hint{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 12px;font-size:13px;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:5}
+            .reticle-hint.show{display:block}
+            `;
+            document.head.appendChild(style);
+
+            // Overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.id = 'overlay';
+            overlay.innerHTML = `
+                            <div class="controls">
+                                <button id="repositionBtn" class="btn secondary" type="button">Move model</button>
+                                <button id="resetBtn_free" class="btn" type="button">Reset model</button>
+                                <button id="playAnimBtn_free" class="btn" type="button">Play animation</button>
+                                <a href="index.html" class="btn secondary">Exit</a>
+                            </div>`;
+            document.body.appendChild(overlay);
+
+            // پیام‌های راهنما
+            const topHint = document.createElement('div');
+            topHint.className = 'top-hint';
+            topHint.id = 'topHint';
+            topHint.textContent = 'Aim at a flat surface (floor/table) until the ring appears';
+            document.body.appendChild(topHint);
+            const reticleHint = document.createElement('div');
+            reticleHint.className = 'reticle-hint'; reticleHint.id = 'reticleHint'; reticleHint.textContent = 'Tap the screen to place the model';
+            document.body.appendChild(reticleHint);
+
+            // ساخت صحنه WebXR Free AR
+            const scene = document.createElement('a-scene');
+            scene.id = 'freeScene';
+            scene.setAttribute('renderer', 'colorManagement: true, physicallyCorrectLights');
+            // VR UI حذف شد؛ ورود به AR با «tap-to-start» سفارشی انجام می‌شود
+            scene.setAttribute('vr-mode-ui', 'enabled: false');
+            scene.setAttribute('webxr', 'optionalFeatures: hit-test, anchors, dom-overlay; overlayElement: #overlay');
+            scene.setAttribute('device-orientation-permission-ui', 'enabled: false');
+
+            // نورها
+            const amb = document.createElement('a-entity'); amb.setAttribute('light', 'type: ambient; color: #fff; intensity: 0.8'); scene.appendChild(amb);
+            const dir = document.createElement('a-entity'); dir.setAttribute('light', 'type: directional; color: #fff; intensity: 0.6'); dir.setAttribute('position', '0 2 1'); scene.appendChild(dir);
+
+            // رتیکل
+            const reticle = document.createElement('a-entity');
+            reticle.id = 'reticle'; reticle.setAttribute('visible', 'false'); reticle.setAttribute('rotation', '-90 0 0');
+            reticle.setAttribute('geometry', 'primitive: ring; radiusInner: 0.06; radiusOuter: 0.075; segmentsTheta: 32');
+            reticle.setAttribute('material', 'color: #76d7ff; opacity: .9; metalness: 0; roughness: 1; shader: standard');
+            scene.appendChild(reticle);
+
+            // مدل و سایه
+            const modelC = document.createElement('a-entity');
+            modelC.id = 'modelContainer'; modelC.setAttribute('visible', 'false');
+            modelC.setAttribute('position', '0 0 0'); modelC.setAttribute('rotation', '0 0 0'); modelC.setAttribute('scale', '0.225 0.225 0.225');
+            modelC.setAttribute('data-init-rot', '0 0 0'); modelC.setAttribute('data-init-scale', '0.225 0.225 0.225');
+            modelC.setAttribute('drag-rotate', 'noPitchLimit: true; minScale: 0.08; maxScale: 0.8');
+            const shadow = document.createElement('a-entity'); shadow.setAttribute('geometry', 'primitive: circle; radius: 0.22; segments: 24'); shadow.setAttribute('rotation', '-90 0 0'); shadow.setAttribute('position', '0 -0.001 0'); shadow.setAttribute('material', 'shader: flat; color: #000; opacity: 0.22; transparent: true'); modelC.appendChild(shadow);
+            const gltf = document.createElement('a-entity'); gltf.id = 'gltf'; gltf.setAttribute('gltf-optimized', 'src: assets/Gltf/model.glb?v=20260214-01');
+            gltf.addEventListener('model-loaded', (ev) => {
+                const sceneEl = document.getElementById('freeScene');
+                const obj = ev.detail && ev.detail.model; if (!obj || !sceneEl) return;
+                const r = sceneEl.renderer; const maxAniso = r && r.capabilities.getMaxAnisotropy ? r.capabilities.getMaxAnisotropy() : 4;
+                const tmpHSL = { h: 0, s: 0, l: 0 };
+                const isOrange = (color) => { try { color.getHSL(tmpHSL); } catch { return false; } return tmpHSL.h >= 0.042 && tmpHSL.h <= 0.13; };
+                obj.traverse(n => {
+                    if (n.isMesh) {
+                        n.castShadow = true; n.receiveShadow = true;
+                        const mats = Array.isArray(n.material) ? n.material : [n.material];
+                        mats.forEach(m => {
+                            if (!m) return;
+                            if (m.map && 'colorSpace' in m.map) { m.map.colorSpace = THREE.SRGBColorSpace; m.map.needsUpdate = true; }
+                            if (typeof m.envMapIntensity === 'number') m.envMapIntensity = Math.max(0.9, m.envMapIntensity || 0.9);
+                            if (typeof m.metalness === 'number') {
+                                if (m.color && isOrange(m.color)) m.metalness = Math.min(m.metalness, 0.15);
+                            }
+                            if (typeof m.roughness === 'number') {
+                                if (m.color && isOrange(m.color)) m.roughness = Math.max(0.38, m.roughness);
+                                else m.roughness = Math.max(0.3, m.roughness);
+                            }
+                            ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(k => {
+                                if (m[k] && typeof m[k].anisotropy === 'number') m[k].anisotropy = Math.max(m[k].anisotropy || 0, maxAniso);
+                            });
+                            if (m.color && isOrange(m.color)) {
+                                try {
+                                    m.color.getHSL(tmpHSL);
+                                    const h = Math.max(0, tmpHSL.h - 0.012);
+                                    const s = Math.min(1, tmpHSL.s * 1.06);
+                                    const l = Math.max(0, Math.min(1, tmpHSL.l * 0.98));
+                                    m.color.setHSL(h, s, l);
+                                } catch { }
+                            }
+                            m.needsUpdate = true;
+                        });
+                    }
+                });
+            });
+            modelC.appendChild(gltf);
+            scene.appendChild(modelC);
+            const cam = document.createElement('a-camera'); cam.setAttribute('position', '0 0 0'); scene.appendChild(cam);
+
+            document.body.appendChild(scene);
+
+            // Tap-to-start AR: برای رعایت ژست کاربر در WebXR، با اولین کلیک وارد AR شو
+            (function () {
+                const startAR = () => {
+                    try { if (scene && scene.enterVR) scene.enterVR(); } catch { }
+                    window.removeEventListener('click', startAR, { passive: true });
+                    // اگر کاربر روی دکمه‌ای کلیک کرده بود، جلوی bubbling را نمی‌گیریم تا رفتار دکمه هم انجام شود
+                };
+                // فقط در حالت Free AR این handler را فعال کن
+                setTimeout(() => { window.addEventListener('click', startAR, { passive: true, once: true }); }, 0);
+            })();
+
+            // اسکریپت منطق WebXR (hit-test + anchors)
+            (function () {
+                const sceneEl = scene;
+                const ret = reticle;
+                const model = modelC;
+                const repositionBtn = document.getElementById('repositionBtn');
+                const resetBtn = document.getElementById('resetBtn_free');
+                const playBtn = document.getElementById('playAnimBtn_free');
+                const topHintEl = document.getElementById('topHint');
+                const reticleHintEl = document.getElementById('reticleHint');
+
+                let xrSession = null, xrRefSpace = null, viewerSpace = null, hitTestSource = null;
+                let xrAnchor = null, xrAnchorSpace = null, wantAnchor = false, lastHitResult = null;
+                let placed = false, relocating = false;
+
+                function animateScaleIn(el, toScale = 0.225, dur = 600) {
+                    try { if (el.__raf) cancelAnimationFrame(el.__raf); } catch { }
+                    const o = el.object3D; const from = 0.0; const to = toScale; const startY = o.position.y - 0.015; const baseY = o.position.y; o.scale.set(from, from, from); o.position.y = startY;
+                    const ease = t => 1 - Math.pow(1 - t, 3);
+                    const t0 = performance.now();
+                    function step(now) { const t = Math.min(1, (now - t0) / dur); const e = ease(t); const s = from + (to - from) * e; o.scale.set(s, s, s); o.position.y = startY + (baseY - startY) * e; if (t < 1) { el.__raf = requestAnimationFrame(step); } else { el.__raf = null; } }
+                    el.__raf = requestAnimationFrame(step);
+                }
+                async function setupHitTest(session) {
+                    try { viewerSpace = await session.requestReferenceSpace('viewer'); xrRefSpace = await session.requestReferenceSpace('local'); hitTestSource = await session.requestHitTestSource({ space: viewerSpace }); } catch (e) { console.warn('HitTest setup failed', e); }
+                }
+                function updateReticle(frame) {
+                    if (!hitTestSource || !xrRefSpace) return;
+                    const results = frame.getHitTestResults(hitTestSource);
+                    if (results.length > 0) {
+                        const hit = results[0]; lastHitResult = hit; const pose = hit.getPose(xrRefSpace); if (!pose) { ret.setAttribute('visible', false); return; }
+                        const m = new THREE.Matrix4(); m.fromArray(pose.transform.matrix); ret.object3D.matrix.copy(m); ret.object3D.matrix.decompose(ret.object3D.position, ret.object3D.quaternion, ret.object3D.scale);
+                        ret.setAttribute('visible', true); if (!placed || relocating) reticleHintEl.classList.add('show');
+                    } else { ret.setAttribute('visible', false); reticleHintEl.classList.remove('show'); }
+                }
+                function placeAtReticle() {
+                    if (!ret.getAttribute('visible')) return;
+                    model.object3D.position.copy(ret.object3D.position);
+                    model.object3D.quaternion.copy(ret.object3D.quaternion);
+                    if (!placed) { model.setAttribute('visible', true); animateScaleIn(model, 0.225, 650); }
+                    wantAnchor = true; placed = true; relocating = false; reticleHintEl.classList.remove('show');
+                }
+                function onSessionStarted(session) {
+                    xrSession = session; setupHitTest(session); topHintEl.style.display = 'block'; reticleHintEl.classList.add('show');
+                    const renderer = sceneEl.renderer; renderer.xr.setReferenceSpaceType('local'); renderer.xr.setSession(session);
+                    renderer.xr.addEventListener('sessionend', () => {
+                        try { if (xrAnchor && xrAnchor.delete) xrAnchor.delete(); } catch { }
+                        xrAnchor = null; xrAnchorSpace = null; wantAnchor = false; lastHitResult = null; xrSession = null; hitTestSource = null; xrRefSpace = null; viewerSpace = null;
+                        ret.setAttribute('visible', false); reticleHintEl.classList.remove('show');
+                    });
+                    session.addEventListener('select', () => { placeAtReticle(); });
+                    renderer.setAnimationLoop(async (t, frame) => {
+                        if (!frame) return; if (!placed || relocating) updateReticle(frame);
+                        if (wantAnchor && lastHitResult) {
+                            try {
+                                if (typeof lastHitResult.createAnchor === 'function') { xrAnchor = await lastHitResult.createAnchor(); xrAnchorSpace = xrAnchor && xrAnchor.anchorSpace; }
+                                else if (frame.createAnchor) { const pose = lastHitResult.getPose(xrRefSpace); if (pose) { const rigid = new XRRigidTransform(pose.transform); xrAnchor = await frame.createAnchor(rigid, xrRefSpace); xrAnchorSpace = xrAnchor && xrAnchor.anchorSpace; } }
+                            } catch (e) { /* anchors unsupported */ } finally { wantAnchor = false; }
+                        }
+                        if (xrAnchorSpace && xrRefSpace) { const ap = frame.getPose(xrAnchorSpace, xrRefSpace); if (ap) { const m = new THREE.Matrix4(); m.fromArray(ap.transform.matrix); model.object3D.matrix.copy(m); model.object3D.matrix.decompose(model.object3D.position, model.object3D.quaternion, model.object3D.scale); } }
+                    });
+                }
+                sceneEl.addEventListener('enter-vr', () => {
+                    if (!sceneEl.is('ar-mode')) return; const session = sceneEl.renderer.xr.getSession(); if (!session) return; onSessionStarted(session);
+                });
+                // Reposition
+                repositionBtn.addEventListener('click', () => { if (!xrSession) return; relocating = true; reticleHintEl.classList.add('show'); try { if (xrAnchor && xrAnchor.delete) xrAnchor.delete(); } catch { } xrAnchor = null; xrAnchorSpace = null; wantAnchor = false; });
+                // Reset
+                resetBtn.addEventListener('click', () => { try { if (model.__raf) cancelAnimationFrame(model.__raf); } catch { } const rotAttr = model.getAttribute('data-init-rot') || '0 0 0'; const scaleAttr = model.getAttribute('data-init-scale') || '0.225 0.225 0.225'; const r = rotAttr.split(/\s+/).map(Number); const s = scaleAttr.split(/\s+/).map(Number); const sx = s[0] || 0.225, sy = s[1] || sx, sz = s[2] || sx; model.setAttribute('rotation', { x: r[0] || 0, y: r[1] || 0, z: r[2] || 0 }); model.object3D.scale.set(sx, sy, sz); try { const mdl = document.getElementById('gltf'); mdl && mdl.removeAttribute('animation-mixer'); } catch { } animateScaleIn(model, sx, 400); });
+                // Play animations
+                playBtn.addEventListener('click', () => { const mdl = document.getElementById('gltf'); if (mdl) { try { mdl.removeAttribute('animation-mixer'); } catch { } mdl.setAttribute('animation-mixer', 'clip: *; loop: repeat; repetitions: Infinity; timeScale: 1;'); } playBtn.classList.add('pulse'); setTimeout(() => playBtn.classList.remove('pulse'), 300); });
+                // Tap to place as well
+                window.addEventListener('click', () => { const s = sceneEl.renderer?.xr?.getSession?.(); if (s && ret.getAttribute('visible')) placeAtReticle(); }, { passive: true });
+            })();
+        }
+    </script>
+</body>
+
+</html>

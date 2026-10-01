@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <title>Open AR Landing</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/Icon/app-icon.svg">
+    <link rel="apple-touch-icon" href="assets/img/Icon/app-icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="assets/style.css?v=20260214-01" />
+    <style>
+        body.mes-landing {
+            background: linear-gradient(180deg, #0f1745 0%, #233871 20%, #284082 50%, #233871 80%, #0f1745 100%) !important;
+        }
+
+        .camera-warning {
+            margin-top: 18px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #ffd399;
+            max-width: 420px;
+            text-align: center;
+            background: rgba(255, 170, 0, .08);
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 170, 0, .35);
+            border-radius: 14px;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            box-shadow: 0 4px 18px -6px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 170, 0, .25);
+        }
+
+        .camera-warning.hidden {
+            display: none;
+        }
+
+        .camera-warning strong {
+            color: #ffb347;
+        }
+    </style>
+    <link rel="dns-prefetch" href="https://aframe.io">
+    <link rel="preconnect" href="https://aframe.io" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="prefetch" href="ar-scene.html" as="document" />
+</head>
+
+<body class="mes-landing">
+    <main class="hero" id="hero">
+        <div class="landing-stack">
+            <div class="top-basmallah">Open Augmented Reality Demo</div>
+            <img class="corp-logo" src="assets/img/Icon/app-icon.svg" alt="AR experience icon" loading="lazy"
+                decoding="async" />
+            <button id="enterBtn" class="btn--main" type="button" disabled>...</button>
+            <div id="camWarn" class="camera-warning hidden" role="alert" aria-live="polite"></div>
+            <div class="credit-block">
+                <div class="credit-text">Open-source demo. Use freely.</div>
+            </div>
+        </div>
+    </main>
+    <noscript>
+        <div
+            style="direction:ltr;text-align:center;padding:18px 24px;margin:24px auto;max-width:420px;border-radius:18px;background:#2d2d31;color:#ffcb8b;font-family:'Vazirmatn',system-ui,sans-serif;line-height:1.8;box-shadow:0 6px 30px -12px rgba(0,0,0,.55);border:1px solid rgba(255,203,139,.35);">
+            JavaScript is required to use this AR experience. Please enable JavaScript and reload the page.
+        </div>
+    </noscript>
+    <div id="loader" class="loader hidden" aria-hidden="true">
+        <div class="loader__box">
+            <div class="loader__title"><span>Preparing the AR experience</span></div>
+            <div class="loader__bar"><span id="loaderProgress" style="width:0%;"></span></div>
+            <div class="loader__percent" id="loaderPercent"><span>0%</span></div>
+            <div class="loader__msg" id="loaderMsg"><span>Loading libraries...</span></div><button id="cancelLoad"
+                class="loader__cancel" type="button">Cancel</button>
+        </div>
+    </div>
+    <script>
+        const LOCAL_SITE_VERSION = '20260214-01';
+        const LIB_PRELOAD = [
+            { id: 'aframe', url: 'https://aframe.io/releases/1.5.0/aframe.min.js' },
+            { id: 'mindar', url: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js' }
+        ];
+        const HEAVY_ASSETS = [
+            'assets/Gltf/model.glb?v=20260214-01',
+            'assets/Mind/targets.mind?v=20260214-01'
+        ];
+
+        const loaderEl = document.getElementById('loader');
+        const progressBar = document.getElementById('loaderProgress');
+        const percentEl = document.getElementById('loaderPercent');
+        const msgEl = document.getElementById('loaderMsg');
+        const cancelBtn = document.getElementById('cancelLoad');
+        const enterBtn = document.getElementById('enterBtn');
+        const camWarn = document.getElementById('camWarn');
+
+        let cancelled = false;
+
+        function showLoader() {
+            loaderEl.classList.remove('hidden');
+            loaderEl.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideLoader() {
+            loaderEl.classList.add('hidden');
+            loaderEl.setAttribute('aria-hidden', 'true');
+        }
+
+        function setProgress(pct, msg, isError = false) {
+            const clamped = Math.min(100, Math.max(0, pct));
+            progressBar.style.width = clamped + '%';
+            percentEl.textContent = clamped.toFixed(0) + '%';
+            if (msg) msgEl.textContent = msg;
+            loaderEl.classList.toggle('error', !!isError);
+        }
+
+        function detectMobileOrTablet() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            const classic = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Tablet|Windows Phone/i.test(ua);
+            const touchMac = /Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1;
+            const uaDataMobile = navigator.userAgentData && navigator.userAgentData.mobile;
+            return classic || touchMac || uaDataMobile;
+        }
+
+        function setupViewportUnits() {
+            const setVh = () => {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--app-vh', vh + 'px');
+                document.documentElement.style.setProperty('--viewport-width', window.innerWidth + 'px');
+                document.documentElement.style.setProperty('--viewport-height', window.innerHeight + 'px');
+            };
+            setVh();
+            window.addEventListener('resize', setVh);
+            window.addEventListener('orientationchange', () => setTimeout(setVh, 100));
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh);
+        }
+
+        async function checkSiteVersion() {
+            try {
+                const resp = await fetch('version.json', { cache: 'no-store' });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data.version && data.version !== LOCAL_SITE_VERSION) {
+                    if (navigator.serviceWorker?.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    setTimeout(() => window.location.reload(), 800);
+                }
+            } catch (e) {
+                console.warn('Version check failed', e);
+            }
+        }
+
+        function loadScriptTag(url) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = url;
+                s.async = false;
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('Failed to load ' + url));
+                document.head.appendChild(s);
+            });
+        }
+
+        async function preloadLibraries() {
+            showLoader();
+            setProgress(4, 'Preparing...');
+            let step = 0;
+            for (const lib of LIB_PRELOAD) {
+                if (cancelled) return;
+                step += 1;
+                setProgress(step * (100 / LIB_PRELOAD.length), 'Loading ' + lib.id + '...');
+                await loadScriptTag(lib.url);
+            }
+            setProgress(100, 'Ready!');
+        }
+
+        async function ensureCameraPermission() {
+            camWarn.classList.add('hidden');
+            camWarn.textContent = '';
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                stream.getTracks().forEach((t) => t.stop());
+                return true;
+            } catch (err) {
+                const blocked = err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
+                const msg = blocked
+                    ? 'Camera access is blocked. Please enable camera permissions in your browser/app settings and try again.'
+                    : 'Camera access is required. Please grant permission to continue.';
+                camWarn.innerHTML = '<strong>Camera permission needed:</strong> ' + msg;
+                camWarn.classList.remove('hidden');
+                enterBtn.textContent = 'Allow camera access';
+                return false;
+            }
+        }
+
+        function prefetchHeavyAssets() {
+            if (!window.fetch) return;
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (connection) {
+                if (connection.saveData) return;
+                if (['slow-2g', '2g'].includes(connection.effectiveType)) return;
+            }
+            HEAVY_ASSETS.forEach((url) => {
+                fetch(url, { credentials: 'same-origin', cache: 'force-cache' }).catch(() => { });
+            });
+        }
+
+        function goToAR() {
+            window.location.href = 'ar-scene.html';
+        }
+
+        async function handleEnter() {
+            if (enterBtn.disabled) return;
+            const ok = await ensureCameraPermission();
+            if (!ok) return;
+            cancelled = false;
+            const fallback = setTimeout(goToAR, 4000);
+            try {
+                await preloadLibraries();
+                clearTimeout(fallback);
+                goToAR();
+            } catch (e) {
+                clearTimeout(fallback);
+                console.warn('Preload failed, continuing to scene', e);
+                goToAR();
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function init() {
+            setupViewportUnits();
+            const isMobile = detectMobileOrTablet();
+            if (isMobile) {
+                enterBtn.classList.add('btn--main-active');
+                enterBtn.textContent = 'Enter the AR experience';
+                enterBtn.disabled = false;
+                enterBtn.addEventListener('click', handleEnter, { passive: true });
+            } else {
+                enterBtn.classList.add('btn--main-disabled');
+                enterBtn.textContent = 'Use a mobile device to continue';
+                enterBtn.disabled = true;
+            }
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => { });
+                navigator.serviceWorker.addEventListener('message', (evt) => {
+                    if (evt.data?.type === 'SW_VERSION') console.log('[SW] Active version', evt.data.version);
+                });
+            }
+
+            checkSiteVersion();
+            setInterval(checkSiteVersion, 60000);
+            prefetchHeavyAssets();
+        }
+
+        cancelBtn?.addEventListener('click', () => { cancelled = true; hideLoader(); });
+        window.addEventListener('load', init, { once: true });
+    </script>
+</body>
+
+</html>

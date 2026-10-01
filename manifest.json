@@ -1,0 +1,21 @@
+{
+  "name": "Open AR Experience",
+  "short_name": "AR Demo",
+  "description": "Open-source image-tracked AR demo powered by A-Frame and MindAR.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f1745",
+  "theme_color": "#233871",
+  "icons": [
+    {
+      "src": "assets/img/Icon/app-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "portrait-primary",
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr"
+}
