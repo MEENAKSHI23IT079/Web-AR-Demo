@@ -16,10 +16,10 @@
     <link rel="icon" type="image/svg+xml" href="assets/img/Icon/app-icon.svg">
     <link rel="apple-touch-icon" href="assets/img/Icon/app-icon.svg">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="assets/style.css?v=20260214-01" />
-    <link rel="stylesheet" href="assets/reset-button.css?v=20260214-01" />
-    <link rel="preload" as="fetch" href="assets/Gltf/model.glb?v=20260214-01" crossorigin>
-    <link rel="preload" as="fetch" href="assets/Mind/targets.mind?v=20260214-01" crossorigin>
+    <link rel="stylesheet" href="assets/style.css?v=20261001-02" />
+    <link rel="stylesheet" href="assets/reset-button.css?v=20261001-02" />
+    <link rel="preload" as="fetch" href="assets/Gltf/model.glb?v=20261001-02" crossorigin>
+    <link rel="preload" as="fetch" href="assets/Mind/targets.mind?v=20261001-02" crossorigin>
     <!-- Progress bar styles -->
     <style>
         .model-progress {
@@ -345,7 +345,7 @@
     </script>
     <script>
         // نسخه سایت برای تشخیص آپدیت (version.json)
-        const LOCAL_SITE_VERSION = '20260214-01';
+        const LOCAL_SITE_VERSION = '20261001-02';
         async function checkSiteVersion() {
             try {
                 const resp = await fetch('version.json', { cache: 'no-store' });
@@ -731,12 +731,12 @@
         <button id="retryAR" type="button">Try again</button>
     </div>
     <a-scene id="arScene" class="ar-hidden"
-        mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20260214-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;"
+        mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20261001-02; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;"
         color-space="sRGB"
         renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance"
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         <a-assets>
-            <a-asset-item id="castingWheel" src="assets/Gltf/model.glb?v=20260214-01"></a-asset-item>
+            <a-asset-item id="castingWheel" src="assets/Gltf/model.glb?v=20261001-02"></a-asset-item>
         </a-assets>
         <!-- Former secondary models removed to reduce load size -->
         <!-- (Removed secondary heavy models) -->
@@ -745,10 +745,7 @@
         <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
         <a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
         <a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
-        <!-- The new building image is target 0 in the replacement targets.mind -->
-        <a-entity mindar-image-target="targetIndex: 1"></a-entity>
-        <a-entity mindar-image-target="targetIndex: 2"></a-entity>
-        <a-entity mindar-image-target="targetIndex: 3"></a-entity>
+        <!-- Single building-image target: targetIndex 0 -->
         <a-entity id="anchor0" mindar-image-target="targetIndex: 0">
             <!-- DEBUG: اعمال چرخش عجیب برای اینکه حتماً تفاوت دیده شود -->
             <a-entity id="wheelContainer" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
@@ -763,7 +760,6 @@
                     one-euro-smoother="minCutoffPos: 1.0; betaPos: 0.03; dCutoffPos: 1.0; minCutoffRot: 1.1; betaRot: 0.03; dCutoffRot: 1.0"></a-entity>
             </a-entity>
         </a-entity>
-        <a-entity mindar-image-target="targetIndex: 6"></a-entity>
     </a-scene>
     <script>
         // Show AR controls and help button after scene is loaded and ready
@@ -1680,7 +1676,7 @@
             modelC.setAttribute('data-init-rot', '0 0 0'); modelC.setAttribute('data-init-scale', '0.225 0.225 0.225');
             modelC.setAttribute('drag-rotate', 'noPitchLimit: true; minScale: 0.08; maxScale: 0.8');
             const shadow = document.createElement('a-entity'); shadow.setAttribute('geometry', 'primitive: circle; radius: 0.22; segments: 24'); shadow.setAttribute('rotation', '-90 0 0'); shadow.setAttribute('position', '0 -0.001 0'); shadow.setAttribute('material', 'shader: flat; color: #000; opacity: 0.22; transparent: true'); modelC.appendChild(shadow);
-            const gltf = document.createElement('a-entity'); gltf.id = 'gltf'; gltf.setAttribute('gltf-optimized', 'src: assets/Gltf/model.glb?v=20260214-01');
+            const gltf = document.createElement('a-entity'); gltf.id = 'gltf'; gltf.setAttribute('gltf-optimized', 'src: assets/Gltf/model.glb?v=20261001-02');
             gltf.addEventListener('model-loaded', (ev) => {
                 const sceneEl = document.getElementById('freeScene');
                 const obj = ev.detail && ev.detail.model; if (!obj || !sceneEl) return;
