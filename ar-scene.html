@@ -935,6 +935,93 @@
                 },
                 remove() { try { this.el.removeObject3D('mesh'); } catch { } }
             });
+            // Direct GLTF animation playback.
+            // This intentionally bypasses animation-mixer because wheelModel uses
+            // the custom gltf-optimized loader. The loader already puts the GLB
+            // animation clips on obj.animations.
+            if (!AFRAME.components['direct-gltf-animation']) {
+                AFRAME.registerComponent('direct-gltf-animation', {
+                    schema: {
+                        loop: { default: true },
+                        timeScale: { default: 1 }
+                    },
+                    init() {
+                        this.mixer = null;
+                        this.actions = [];
+                        this._bound = false;
+                        this._onLoaded = (ev) => {
+                            const obj = ev.detail && ev.detail.model;
+                            if (obj) this.bind(obj);
+                        };
+                        this.el.addEventListener('model-loaded', this._onLoaded);
+                        const obj = this.el.getObject3D && this.el.getObject3D('mesh');
+                        if (obj) this.bind(obj);
+                    },
+                    bind(obj) {
+                        if (!obj) return;
+                        const clips = Array.isArray(obj.animations) ? obj.animations : [];
+                        if (!clips.length) {
+                            console.warn('[AR Animation] No animation clips found on wheelModel.');
+                            return;
+                        }
+
+                        try {
+                            if (this.mixer) this.mixer.stopAllAction();
+                        } catch (e) {}
+
+                        this.mixer = new THREE.AnimationMixer(obj);
+                        this.actions = clips.map((clip) => {
+                            const action = this.mixer.clipAction(clip);
+                            action.reset();
+                            action.enabled = true;
+                            action.clampWhenFinished = false;
+                            action.setEffectiveTimeScale(Number(this.data.timeScale) || 1);
+                            action.setLoop(
+                                this.data.loop ? THREE.LoopRepeat : THREE.LoopOnce,
+                                this.data.loop ? Infinity : 1
+                            );
+                            action.play();
+                            return action;
+                        });
+
+                        this._bound = true;
+                        console.log('[AR Animation] Playing', clips.length, 'GLB clips:', clips.map(c => c.name));
+                    },
+                    play() {
+                        if (!this.mixer) {
+                            const obj = this.el.getObject3D && this.el.getObject3D('mesh');
+                            if (obj) this.bind(obj);
+                            return;
+                        }
+                        this.actions.forEach(a => {
+                            a.enabled = true;
+                            a.paused = false;
+                            a.play();
+                        });
+                    },
+                    pause() {
+                        this.actions.forEach(a => { a.paused = true; });
+                    },
+                    tick(time, delta) {
+                        if (this.mixer && this._bound && delta > 0) {
+                            this.mixer.update(delta / 1000);
+                        }
+                    },
+                    remove() {
+                        try {
+                            if (this.mixer) {
+                                this.mixer.stopAllAction();
+                                this.mixer.uncacheRoot(this.el.getObject3D('mesh'));
+                            }
+                        } catch (e) {}
+                        try { this.el.removeEventListener('model-loaded', this._onLoaded); } catch (e) {}
+                        this.actions = [];
+                        this.mixer = null;
+                        this._bound = false;
+                    }
+                });
+            }
+
             function configure() {
                 const r = sceneEl.renderer; if (!r) return;
                 try {
@@ -1279,6 +1366,15 @@
                 if (wheelC.__animRAF) { try { cancelAnimationFrame(wheelC.__animRAF); } catch { } wheelC.__animRAF = null; }
                 wheelC.__appearing = false;
                 animateScaleIn(wheelC, targetScale, dur);
+
+                // Start the GLB's real animation clips automatically when the marker is found.
+                const wheelModel = document.getElementById('wheelModel');
+                if (wheelModel) {
+                    try { wheelModel.removeAttribute('animation-mixer'); } catch { }
+                    try { wheelModel.removeAttribute('direct-gltf-animation'); } catch { }
+                    wheelModel.setAttribute('direct-gltf-animation', 'loop: true; timeScale: 1;');
+                }
+
                 state.active = 5;
             }
 
@@ -1289,6 +1385,13 @@
                 setLookControls(false);
                 if (wheelC.__animRAF) { try { cancelAnimationFrame(wheelC.__animRAF); } catch { } wheelC.__animRAF = null; }
                 wheelC.__appearing = false;
+
+                const wheelModel = document.getElementById('wheelModel');
+                if (wheelModel) {
+                    try { wheelModel.removeAttribute('direct-gltf-animation'); } catch { }
+                    try { wheelModel.removeAttribute('animation-mixer'); } catch { }
+                }
+
                 state.active = null;
             }
 
@@ -1387,7 +1490,7 @@
                         smoothComp._lastScale = obj.scale.clone();
                     }
                     // توقف انیمیشن‌های مدلِ همین کانتینر
-                    el.querySelectorAll('a-gltf-model,[gltf-optimized]').forEach(m => { try { m.removeAttribute('animation-mixer'); } catch { } });
+                    el.querySelectorAll('a-gltf-model,[gltf-optimized]').forEach(m => { try { m.removeAttribute('animation-mixer'); } catch { } try { m.removeAttribute('direct-gltf-animation'); } catch { } });
                 });
 
                 // reset micro-stabilizer baseline
@@ -1406,10 +1509,13 @@
                 if (ready) cb(); else el.addEventListener('model-loaded', cb, { once: true });
             }
             function animateOnce(modelEl) {
+                if (!modelEl) return;
                 try { modelEl.removeAttribute('animation-mixer'); } catch { }
-                modelEl.setAttribute('animation-mixer', 'clip: *; loop: once; repetitions: 1; timeScale: 1; clampWhenFinished: true;');
-                // Re-emit model-loaded to ensure animation-mixer binds when added after load
-                try { const obj = modelEl.getObject3D && modelEl.getObject3D('mesh'); if (obj) modelEl.emit('model-loaded', { format: 'gltf', model: obj, animations: obj.animations || [] }); } catch { }
+                try { modelEl.removeAttribute('direct-gltf-animation'); } catch { }
+                // Play every animation clip contained in the GLB using THREE.AnimationMixer.
+                modelEl.setAttribute('direct-gltf-animation', 'loop: true; timeScale: 1;');
+                const comp = modelEl.components && modelEl.components['direct-gltf-animation'];
+                if (comp && comp.play) comp.play();
             }
             function copyLocalTransform(fromEl, toEl) {
                 try {
