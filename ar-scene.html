@@ -680,6 +680,19 @@
 </head>
 
 <body>
+    <div id="arScanStatus" style="
+        position:fixed; left:50%; top:18%;
+        transform:translateX(-50%);
+        z-index:9999;
+        padding:12px 20px;
+        border-radius:14px;
+        background:rgba(15,23,42,.82);
+        color:#fff;
+        font:600 16px/1.3 Arial,sans-serif;
+        text-align:center;
+        pointer-events:none;
+        backdrop-filter:blur(8px);
+    ">Scan the building image</div>
     <div id="modelProgress" class="model-progress hidden" aria-live="polite" aria-atomic="true">
         <div class="model-progress__bar"><span class="model-progress__fill" style="width:0%"></span></div>
         <div class="model-progress__percent" id="modelProgressPercent">0%</div>
@@ -732,12 +745,10 @@
         <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
         <a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
         <a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
-        <!-- Targets 0,1,2,3,6 عمداً بدون مدل تا فقط 4 و 5 نمایش داشته باشند -->
-        <a-entity mindar-image-target="targetIndex: 0"></a-entity>
+        <!-- The new building image is target 0 in the replacement targets.mind -->
         <a-entity mindar-image-target="targetIndex: 1"></a-entity>
         <a-entity mindar-image-target="targetIndex: 2"></a-entity>
         <a-entity mindar-image-target="targetIndex: 3"></a-entity>
-        <!-- Anchor 4 removed as part of feature reduction -->
         <a-entity id="anchor0" mindar-image-target="targetIndex: 0">
             <!-- DEBUG: اعمال چرخش عجیب برای اینکه حتماً تفاوت دیده شود -->
             <a-entity id="wheelContainer" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
@@ -1277,7 +1288,7 @@
 
             const sceneEl = document.querySelector('a-scene');
             const cam = document.querySelector('a-camera');
-            const anchor5 = document.getElementById('anchor5');
+            const anchor0 = document.getElementById('anchor0');
             const wheelC = document.getElementById('wheelContainer');
             const state = { active: null };
 
@@ -1350,12 +1361,12 @@
             }
 
             function onFoundWheel() {
-                if (!wheelC || !anchor5) return;
+                if (!wheelC || !anchor0) return;
                 try { wheelC.emit('stabilizer-reset'); } catch { }
-                if (wheelC.parentElement !== anchor5) anchor5.appendChild(wheelC);
+                if (wheelC.parentElement !== anchor0) anchor0.appendChild(wheelC);
                 setLocalInitTRS(wheelC);
-                try { anchor5.object3D.visible = true; } catch { }
-                anchor5.setAttribute('visible', true);
+                try { anchor0.object3D.visible = true; } catch { }
+                anchor0.setAttribute('visible', true);
                 wheelC.object3D.visible = true;
                 wheelC.setAttribute('visible', true);
                 setLookControls(false);
@@ -1375,11 +1386,11 @@
                     wheelModel.setAttribute('direct-gltf-animation', 'loop: true; timeScale: 1;');
                 }
 
-                state.active = 5;
+                state.active = 0;
             }
 
             function onLostWheel() {
-                if (state.active !== 5) return;
+                if (state.active !== 0) return;
                 if (!wheelC) return;
                 try { wheelC.object3D.visible = false; wheelC.setAttribute('visible', false); } catch { }
                 setLookControls(false);
@@ -1395,9 +1406,25 @@
                 state.active = null;
             }
 
-            if (anchor5) {
-                anchor5.addEventListener('targetFound', onFoundWheel);
-                anchor5.addEventListener('targetLost', onLostWheel);
+            const arScanStatus = document.getElementById('arScanStatus');
+
+            function setARScanStatus(message, visible = true) {
+                if (!arScanStatus) return;
+                arScanStatus.textContent = message;
+                arScanStatus.style.display = visible ? 'block' : 'none';
+            }
+
+            if (anchor0) {
+                anchor0.addEventListener('targetFound', () => {
+                    setARScanStatus('✓ Marker detected — loading 3D model', true);
+                    onFoundWheel();
+                    setTimeout(() => setARScanStatus('▶ Animation playing', true), 900);
+                });
+
+                anchor0.addEventListener('targetLost', () => {
+                    setARScanStatus('Scan the building image again', true);
+                    onLostWheel();
+                });
             }
 
             // حذف ریست سخت استفاده‌نشده
