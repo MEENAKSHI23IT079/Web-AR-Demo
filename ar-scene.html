@@ -732,12 +732,12 @@
         <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
         <a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
         <a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
-        <!-- Targets 0,1,2,3,6 عمداً بدون مدل تا فقط 4 و 5 نمایش داشته باشند -->
+        <!-- The uploaded target set is intended to show the model for target 4 or target 5. -->
         <a-entity mindar-image-target="targetIndex: 1"></a-entity>
         <a-entity mindar-image-target="targetIndex: 2"></a-entity>
         <a-entity mindar-image-target="targetIndex: 3"></a-entity>
         <!-- Anchor 4 removed as part of feature reduction -->
-        <a-entity id="anchor0" mindar-image-target="targetIndex: 0">
+        <a-entity id="anchor0" mindar-image-target="targetIndex: 4">
             <!-- DEBUG: اعمال چرخش عجیب برای اینکه حتماً تفاوت دیده شود -->
             <a-entity id="wheelContainer" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
                 drag-rotate="noPitchLimit: true; minScale: 0.06; maxScale: 1.2"
@@ -749,6 +749,13 @@
                 <a-entity id="wheelModel" gltf-model="src: #castingWheel" rotation="-90 180 0"
                     pose-smoother="positionLerp: 0.04; rotationSlerp: 0.06; scaleLerp: 0.08"
                     one-euro-smoother="minCutoffPos: 1.0; betaPos: 0.03; dCutoffPos: 1.0; minCutoffRot: 1.1; betaRot: 0.03; dCutoffRot: 1.0"></a-entity>
+            </a-entity>
+        </a-entity>
+        <!-- Alternate building target: also show the model when target 5 is recognized. -->
+        <a-entity id="anchor5" mindar-image-target="targetIndex: 5">
+            <a-entity id="wheelContainer5" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375">
+                <a-entity id="wheelModel5" gltf-model="src: #castingWheel" rotation="-90 180 0"
+                    animation-mixer="clip: *; loop: repeat; timeScale: 1"></a-entity>
             </a-entity>
         </a-entity>
         <a-entity mindar-image-target="targetIndex: 6"></a-entity>
@@ -1398,6 +1405,22 @@
             if (anchor0) {
                 anchor0.addEventListener('targetFound', onFoundWheel);
                 anchor0.addEventListener('targetLost', onLostWheel);
+            }
+
+            // Target 5 has its own model instance so either intended target can work.
+            const anchor5 = document.getElementById('anchor5');
+            const wheelModel5 = document.getElementById('wheelModel5');
+            if (anchor5 && wheelModel5) {
+                anchor5.addEventListener('targetFound', () => {
+                    wheelModel5.setAttribute('visible', true);
+                    const start = () => wheelModel5.setAttribute('animation-mixer', 'clip: *; loop: repeat; timeScale: 1');
+                    if (wheelModel5.getObject3D('mesh')) start();
+                    else wheelModel5.addEventListener('model-loaded', start, { once: true });
+                    wheelModel5.addEventListener('model-error', e => console.error('[AR] Target 5 GLB load failed:', e.detail || e), { once: true });
+                });
+                anchor5.addEventListener('targetLost', () => {
+                    wheelModel5.removeAttribute('animation-mixer');
+                });
             }
 
             // حذف ریست سخت استفاده‌نشده
