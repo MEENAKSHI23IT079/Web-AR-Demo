@@ -704,10 +704,9 @@
         </div>
     </div>
     <div class="ar-bottom-controls" style="will-change: opacity, transform">
-        <button id="resetBtn" class="ar-reset-btn" title="Reset model" style="will-change: transform, opacity">Reset
-            model</button>
-        <button id="playAnimBtn" class="ar-play-btn" title="Play animation" style="will-change: transform, opacity">Play
-            animation</button>
+        <button id="resetBtn" class="ar-reset-btn" title="Reset image" style="will-change: transform, opacity">Reset
+            image</button>
+        <button id="playAnimBtn" class="ar-play-btn" style="display:none" title="Play animation (not needed for image)" style="will-change: transform, opacity">Image displayed automatically</button>
     </div>
     <!-- filterMinCF و filterBeta پارامترهای داخلی فیلتر کالمن MindAR هستند؛ اگر هنوز لرزش بود filterMinCF را کوچک‌تر (مثلا 0.00005) و اگر مدل کند شد بزرگ‌تر کنید. -->
     <div id="arBlocker" class="ar-blocker hidden" role="alert" aria-live="assertive">
@@ -724,6 +723,7 @@
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         <a-assets>
             <a-asset-item id="castingWheel" src="assets/Gltf/model.glb?v=20260214-01"></a-asset-item>
+            <img id="buildingImage" src="assets/Gltf/building.png?v=20261004-01" crossorigin="anonymous">
         </a-assets>
         <!-- Former secondary models removed to reduce load size -->
         <!-- (Removed secondary heavy models) -->
@@ -739,7 +739,8 @@
         <!-- Anchor 4 removed as part of feature reduction -->
         <a-entity id="anchor0" mindar-image-target="targetIndex: 4">
             <!-- DEBUG: اعمال چرخش عجیب برای اینکه حتماً تفاوت دیده شود -->
-            <a-entity id="wheelContainer" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
+            <a-image id="buildingImageOverlay" src="#buildingImage" width="1.35" height="0.90" position="0 0 0.03" material="shader: flat; transparent: true; side: double"></a-image>
+            <a-entity id="wheelContainer" visible="false" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
                 drag-rotate="noPitchLimit: true; minScale: 0.06; maxScale: 1.2"
                 micro-stabilizer="posEps: 0.0045; rotEpsDeg: 1.2; lerp: 0.08; slerp: 0.08; maxStepPos: 0.008; maxStepDeg: 3.5"
                 data-init-rot="0 0 0" data-init-scale="0.375 0.375 0.375" data-init-pos="0 0 0">
@@ -753,7 +754,8 @@
         </a-entity>
         <!-- Alternate building target: also show the model when target 5 is recognized. -->
         <a-entity id="anchor5" mindar-image-target="targetIndex: 5">
-            <a-entity id="wheelContainer5" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375">
+            <a-image id="buildingImageOverlay5" src="#buildingImage" width="1.35" height="0.90" position="0 0 0.03" material="shader: flat; transparent: true; side: double"></a-image>
+            <a-entity id="wheelContainer5" visible="false" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375">
                 <a-entity id="wheelModel5" gltf-model="src: #castingWheel" rotation="-90 180 0"
                     animation-mixer="clip: *; loop: repeat; timeScale: 1"></a-entity>
             </a-entity>
