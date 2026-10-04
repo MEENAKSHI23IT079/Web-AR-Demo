@@ -733,7 +733,6 @@
         <a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
         <a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
         <!-- Targets 0,1,2,3,6 عمداً بدون مدل تا فقط 4 و 5 نمایش داشته باشند -->
-        <a-entity mindar-image-target="targetIndex: 0"></a-entity>
         <a-entity mindar-image-target="targetIndex: 1"></a-entity>
         <a-entity mindar-image-target="targetIndex: 2"></a-entity>
         <a-entity mindar-image-target="targetIndex: 3"></a-entity>
@@ -747,7 +746,7 @@
                 <a-entity geometry="primitive: circle; radius: 0.22; segments: 24" rotation="-90 0 0"
                     position="0 -0.001 0"
                     material="shader: flat; color: #000; opacity: 0.22; transparent: true"></a-entity>
-                <a-entity id="wheelModel" gltf-optimized="src: #castingWheel" rotation="-90 180 0"
+                <a-entity id="wheelModel" gltf-model="src: #castingWheel" rotation="-90 180 0"
                     pose-smoother="positionLerp: 0.04; rotationSlerp: 0.06; scaleLerp: 0.08"
                     one-euro-smoother="minCutoffPos: 1.0; betaPos: 0.03; dCutoffPos: 1.0; minCutoffRot: 1.1; betaRot: 0.03; dCutoffRot: 1.0"></a-entity>
             </a-entity>
@@ -1277,7 +1276,7 @@
 
             const sceneEl = document.querySelector('a-scene');
             const cam = document.querySelector('a-camera');
-            const anchor5 = document.getElementById('anchor5');
+            const anchor0 = document.getElementById('anchor0');
             const wheelC = document.getElementById('wheelContainer');
             const state = { active: null };
 
@@ -1350,32 +1349,33 @@
             }
 
             function onFoundWheel() {
-                if (!wheelC || !anchor5) return;
-                try { wheelC.emit('stabilizer-reset'); } catch { }
-                if (wheelC.parentElement !== anchor5) anchor5.appendChild(wheelC);
-                setLocalInitTRS(wheelC);
-                try { anchor5.object3D.visible = true; } catch { }
-                anchor5.setAttribute('visible', true);
-                wheelC.object3D.visible = true;
-                wheelC.setAttribute('visible', true);
-                setLookControls(false);
-                const override = parseVec3(wheelC.getAttribute('data-appear-final-scale'));
-                const targetScale = override || parseScaleAttr(wheelC);
-                const durAttr = parseInt(wheelC.getAttribute('data-appear-dur') || '700', 10);
-                const dur = isFinite(durAttr) ? durAttr : 700;
-                if (wheelC.__animRAF) { try { cancelAnimationFrame(wheelC.__animRAF); } catch { } wheelC.__animRAF = null; }
-                wheelC.__appearing = false;
-                animateScaleIn(wheelC, targetScale, dur);
-
-                // Start the GLB's real animation clips automatically when the marker is found.
-                const wheelModel = document.getElementById('wheelModel');
-                if (wheelModel) {
-                    try { wheelModel.removeAttribute('animation-mixer'); } catch { }
-                    try { wheelModel.removeAttribute('direct-gltf-animation'); } catch { }
-                    wheelModel.setAttribute('direct-gltf-animation', 'loop: true; timeScale: 1;');
-                }
-
+                // Target 0 has been recognized. Keep the state in sync with onLostWheel().
                 state.active = 5;
+                const wheelModel = document.getElementById('wheelModel');
+                if (!wheelModel) return;
+
+                const startAnimation = () => {
+                    try {
+                        // aframe-extras provides animation-mixer and uses the clips
+                        // embedded in the GLB loaded by A-Frame's built-in gltf-model.
+                        wheelModel.removeAttribute('direct-gltf-animation');
+                        wheelModel.removeAttribute('animation-mixer');
+                        wheelModel.setAttribute('animation-mixer',
+                            'clip: *; loop: repeat; timeScale: 1');
+                        console.log('[AR] Target found; model loaded and animation requested.');
+                    } catch (e) {
+                        console.error('[AR] Could not start model animation:', e);
+                    }
+                };
+
+                if (wheelModel.getObject3D('mesh')) {
+                    startAnimation();
+                } else {
+                    wheelModel.addEventListener('model-loaded', startAnimation, { once: true });
+                    wheelModel.addEventListener('model-error', (event) => {
+                        console.error('[AR] GLB model failed to load:', event.detail || event);
+                    }, { once: true });
+                }
             }
 
             function onLostWheel() {
@@ -1395,9 +1395,9 @@
                 state.active = null;
             }
 
-            if (anchor5) {
-                anchor5.addEventListener('targetFound', onFoundWheel);
-                anchor5.addEventListener('targetLost', onLostWheel);
+            if (anchor0) {
+                anchor0.addEventListener('targetFound', onFoundWheel);
+                anchor0.addEventListener('targetLost', onLostWheel);
             }
 
             // حذف ریست سخت استفاده‌نشده
@@ -1508,15 +1508,44 @@
                 const ready = el.getObject3D && el.getObject3D('mesh');
                 if (ready) cb(); else el.addEventListener('model-loaded', cb, { once: true });
             }
-            function animateOnce(modelEl) {
-                if (!modelEl) return;
-                try { modelEl.removeAttribute('animation-mixer'); } catch { }
-                try { modelEl.removeAttribute('direct-gltf-animation'); } catch { }
-                // Play every animation clip contained in the GLB using THREE.AnimationMixer.
-                modelEl.setAttribute('direct-gltf-animation', 'loop: true; timeScale: 1;');
-                const comp = modelEl.components && modelEl.components['direct-gltf-animation'];
-                if (comp && comp.play) comp.play();
+	    function animateOnce(modelEl) {
+    if (!modelEl) return;
+
+    const start = () => {
+        try {
+            modelEl.removeAttribute('animation-mixer');
+        } catch (e) {}
+
+        try {
+            modelEl.removeAttribute('direct-gltf-animation');
+        } catch (e) {}
+
+        modelEl.setAttribute(
+            'direct-gltf-animation',
+            'loop: true; timeScale: 1'
+        );
+
+        setTimeout(() => {
+            const comp =
+                modelEl.components &&
+                modelEl.components['direct-gltf-animation'];
+
+            if (comp && comp.play) {
+                comp.play();
+                console.log('▶️ Animation button pressed');
             }
+        }, 100);
+    };
+
+    if (modelEl.getObject3D('mesh')) {
+        start();
+    } else {
+        modelEl.addEventListener('model-loaded', start, {
+            once: true
+        });
+    }
+}
+            
             function copyLocalTransform(fromEl, toEl) {
                 try {
                     // Copy local rotation precisely
