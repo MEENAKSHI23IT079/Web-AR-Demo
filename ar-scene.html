@@ -1,27 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
 
+<html dir="ltr" lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Open AR Scene</title>
-    <link rel="icon" type="image/svg+xml" href="assets/img/Icon/app-icon.svg">
-    <link rel="apple-touch-icon" href="assets/img/Icon/app-icon.svg">
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="assets/style.css?v=20260214-01" />
-    <link rel="stylesheet" href="assets/reset-button.css?v=20260214-01" />
-    <link rel="preload" as="fetch" href="assets/Gltf/model.glb?v=20260214-01" crossorigin>
-    <link rel="preload" as="fetch" href="assets/Mind/targets.mind?v=20260214-01" crossorigin>
-    <!-- Progress bar styles -->
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
+<meta content="no-cache" http-equiv="Pragma"/>
+<meta content="0" http-equiv="Expires"/>
+<meta content="telephone=no" name="format-detection"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<title>Open AR Scene</title>
+<link href="assets/img/Icon/app-icon.svg" rel="icon" type="image/svg+xml"/>
+<link href="assets/img/Icon/app-icon.svg" rel="apple-touch-icon"/>
+<link href="manifest.json" rel="manifest"/>
+<link href="assets/style.css?v=20260214-01" rel="stylesheet">
+<link href="assets/reset-button.css?v=20260214-01" rel="stylesheet">
+<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20260214-01" rel="preload"/>
+<!-- Progress bar styles -->
+<style>
         .model-progress {
             position: fixed;
             top: 14px;
@@ -95,12 +93,12 @@
             }
         }
     </style>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <!-- فونت مطمئن: Google Fonts (جایگزین @import قبلی که 404 می‌داد) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
-    <style>
+<link crossorigin="" href="https://cdn.jsdelivr.net" rel="preconnect"/>
+<!-- فونت مطمئن: Google Fonts (جایگزین @import قبلی که 404 می‌داد) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<style>
         /* حذف @import مشکل‌دار؛ اکنون فونت Vazirmatn از Google Fonts لود می‌شود */
 
         body {
@@ -259,17 +257,17 @@
             }
         }
     </style>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <!-- RGBELoader for HDR environment maps (compatible with global THREE used by A-Frame) -->
-    <script src="https://unpkg.com/three@0.152.2/examples/js/loaders/RGBELoader.js"></script>
-    <script>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<!-- RGBELoader for HDR environment maps (compatible with global THREE used by A-Frame) -->
+<script src="https://unpkg.com/three@0.152.2/examples/js/loaders/RGBELoader.js"></script>
+<script>
         // حالت AR آزاد بر اساس کوئری‌استرینگ ?mode=free
         window.FREE_MODE = (new URLSearchParams(location.search).get('mode') === 'free');
         if (window.FREE_MODE) { try { document.documentElement.classList.add('free-mode'); document.body && document.body.classList.add('free-mode'); } catch (e) { } }
     </script>
-    <script>
+<script>
         // تلاش برای استفاده از حداکثر کیفیت دوربین در حالت MindAR
         // با override کردن getUserMedia و افزودن محدودیت‌های ایده‌آل (رزولوشن/فریم‌ریت) + fallback ایمن
         (function () {
@@ -343,7 +341,7 @@
             };
         })();
     </script>
-    <script>
+<script>
         // نسخه سایت برای تشخیص آپدیت (version.json)
         const LOCAL_SITE_VERSION = '20260214-01';
         async function checkSiteVersion() {
@@ -391,7 +389,7 @@
             }
         })();
     </script>
-    <script>
+<script>
         // کامپوننت برای چرخاندن مدل با درگ با «قفل محور»: فقط یکی از محورها (افقی یا عمودی) در هر ژست فعال می‌شود
         AFRAME.registerComponent('drag-rotate', {
             schema: {
@@ -675,94 +673,80 @@
             }
         });
     </script>
-    <!-- Performance hints: preconnect & preload -->
-    <link rel="preconnect" href="https://unpkg.com" crossorigin>
-</head>
-
+<!-- Performance hints: preconnect & preload -->
+<link crossorigin="" href="https://unpkg.com" rel="preconnect"/>
+</link></link></head>
 <body>
-    <div id="modelProgress" class="model-progress hidden" aria-live="polite" aria-atomic="true">
-        <div class="model-progress__bar"><span class="model-progress__fill" style="width:0%"></span></div>
-        <div class="model-progress__percent" id="modelProgressPercent">0%</div>
-    </div>
-    <button id="helpBtn" class="ar-help-btn" aria-controls="helpPanel" aria-expanded="false"
-        aria-haspopup="dialog">Help</button>
-    <div id="helpPanel" class="ar-help-panel" aria-hidden="true" role="dialog" aria-modal="true">
-        <div class="ar-help-panel__inner">
-            <h2>How to use AR</h2>
-            <ul class="ar-help-list">
-                <li><strong>Start:</strong> Point the camera at the printed marker or reference image until the 3D model
+
+
+<button aria-controls="helpPanel" aria-expanded="false" aria-haspopup="dialog" class="ar-help-btn" id="helpBtn">Help</button>
+<div aria-hidden="true" aria-modal="true" class="ar-help-panel" id="helpPanel" role="dialog">
+<div class="ar-help-panel__inner">
+<h2>How to use AR</h2>
+<ul class="ar-help-list">
+<li><strong>Start:</strong> Point the camera at the printed marker or reference image until the 3D model
                     appears.</li>
-                <li><strong>Rotate:</strong> One finger drag — horizontal drag rotates horizontally, vertical drag
+<li><strong>Rotate:</strong> One finger drag — horizontal drag rotates horizontally, vertical drag
                     rotates vertically.</li>
-                <li><strong>Zoom:</strong> Pinch with two fingers to scale smoothly; avoid over-scaling for best
+<li><strong>Zoom:</strong> Pinch with two fingers to scale smoothly; avoid over-scaling for best
                     tracking.</li>
-                <li><strong>Reset:</strong> If the model drifts or tilts, tap “Reset model.”</li>
-                <li><strong>Lighting:</strong> Use even lighting and non-reflective backgrounds if detection is slow.
+<li><strong>Reset:</strong> If the model drifts or tilts, tap “Reset model.”</li>
+<li><strong>Lighting:</strong> Use even lighting and non-reflective backgrounds if detection is slow.
                 </li>
-            </ul>
-            <button class="ar-help-close" id="closeHelp" aria-label="Close help">✕</button>
-        </div>
-    </div>
-    <div class="ar-bottom-controls" style="will-change: opacity, transform">
-        <button id="resetBtn" class="ar-reset-btn" title="Reset image" style="will-change: transform, opacity">Reset
-            image</button>
-        <button id="playAnimBtn" class="ar-play-btn" style="display:none" title="Play animation (not needed for image)" style="will-change: transform, opacity">Image displayed automatically</button>
-    </div>
-    <!-- filterMinCF و filterBeta پارامترهای داخلی فیلتر کالمن MindAR هستند؛ اگر هنوز لرزش بود filterMinCF را کوچک‌تر (مثلا 0.00005) و اگر مدل کند شد بزرگ‌تر کنید. -->
-    <div id="arBlocker" class="ar-blocker hidden" role="alert" aria-live="assertive">
-        <h1>Camera access is required</h1>
-        <p id="arBlockerMsg">Allow camera access to start the AR experience.</p>
-        <div class="tips" id="arBlockerTips">On iPad: Settings → Safari → Camera, enable access or open the page over
+</ul>
+<button aria-label="Close help" class="ar-help-close" id="closeHelp">✕</button>
+</div>
+</div>
+<div class="ar-bottom-controls" style="will-change: opacity, transform">
+<button class="ar-reset-btn" id="resetBtn" style="will-change: transform, opacity" title="Reset model">Reset
+            model</button>
+<button class="ar-play-btn" id="playAnimBtn" style="will-change: transform, opacity" title="Play animation">Play
+            animation</button>
+</div>
+<!-- filterMinCF و filterBeta پارامترهای داخلی فیلتر کالمن MindAR هستند؛ اگر هنوز لرزش بود filterMinCF را کوچک‌تر (مثلا 0.00005) و اگر مدل کند شد بزرگ‌تر کنید. -->
+<div aria-live="assertive" class="ar-blocker hidden" id="arBlocker" role="alert">
+<h1>Camera access is required</h1>
+<p id="arBlockerMsg">Allow camera access to start the AR experience.</p>
+<div class="tips" id="arBlockerTips">On iPad: Settings → Safari → Camera, enable access or open the page over
             HTTPS.</div>
-        <button id="retryAR" type="button">Try again</button>
-    </div>
-    <a-scene id="arScene" class="ar-hidden"
-        mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20260214-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;"
-        color-space="sRGB"
-        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance"
-        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets>
-            <a-asset-item id="castingWheel" src="assets/Gltf/model.glb?v=20260214-01"></a-asset-item>
-            <img id="buildingImage" src="assets/Gltf/building.png?v=20261004-01" crossorigin="anonymous">
-        </a-assets>
-        <!-- Former secondary models removed to reduce load size -->
-        <!-- (Removed secondary heavy models) -->
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-        <!-- Key lights to improve PBR look -->
-        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
-        <a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
-        <a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
-        <!-- The uploaded target set is intended to show the model for target 4 or target 5. -->
-        <a-entity mindar-image-target="targetIndex: 1"></a-entity>
-        <a-entity mindar-image-target="targetIndex: 2"></a-entity>
-        <a-entity mindar-image-target="targetIndex: 3"></a-entity>
-        <!-- Anchor 4 removed as part of feature reduction -->
-        <a-entity id="anchor0" mindar-image-target="targetIndex: 4">
-            <!-- DEBUG: اعمال چرخش عجیب برای اینکه حتماً تفاوت دیده شود -->
-            <a-image id="buildingImageOverlay" src="#buildingImage" width="1.35" height="0.90" position="0 0 0.03" material="shader: flat; transparent: true; side: double"></a-image>
-            <a-entity id="wheelContainer" visible="false" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375"
-                drag-rotate="noPitchLimit: true; minScale: 0.06; maxScale: 1.2"
-                micro-stabilizer="posEps: 0.0045; rotEpsDeg: 1.2; lerp: 0.08; slerp: 0.08; maxStepPos: 0.008; maxStepDeg: 3.5"
-                data-init-rot="0 0 0" data-init-scale="0.375 0.375 0.375" data-init-pos="0 0 0">
-                <a-entity geometry="primitive: circle; radius: 0.22; segments: 24" rotation="-90 0 0"
-                    position="0 -0.001 0"
-                    material="shader: flat; color: #000; opacity: 0.22; transparent: true"></a-entity>
-                <a-entity id="wheelModel" gltf-model="src: #castingWheel" rotation="-90 180 0"
-                    pose-smoother="positionLerp: 0.04; rotationSlerp: 0.06; scaleLerp: 0.08"
-                    one-euro-smoother="minCutoffPos: 1.0; betaPos: 0.03; dCutoffPos: 1.0; minCutoffRot: 1.1; betaRot: 0.03; dCutoffRot: 1.0"></a-entity>
-            </a-entity>
-        </a-entity>
-        <!-- Alternate building target: also show the model when target 5 is recognized. -->
-        <a-entity id="anchor5" mindar-image-target="targetIndex: 5">
-            <a-image id="buildingImageOverlay5" src="#buildingImage" width="1.35" height="0.90" position="0 0 0.03" material="shader: flat; transparent: true; side: double"></a-image>
-            <a-entity id="wheelContainer5" visible="false" position="0 0 0" rotation="0 0 0" scale="0.375 0.375 0.375">
-                <a-entity id="wheelModel5" gltf-model="src: #castingWheel" rotation="-90 180 0"
-                    animation-mixer="clip: *; loop: repeat; timeScale: 1"></a-entity>
-            </a-entity>
-        </a-entity>
-        <a-entity mindar-image-target="targetIndex: 6"></a-entity>
-    </a-scene>
-    <script>
+<button id="retryAR" type="button">Try again</button>
+</div>
+<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20260214-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
+<a-assets>
+<img crossorigin="anonymous" id="buildingImage" src="assets/Gltf/building.png"/>
+</a-assets>
+<!-- Former secondary models removed to reduce load size -->
+<!-- (Removed secondary heavy models) -->
+<a-camera look-controls="enabled: false" position="0 0 0"></a-camera>
+<!-- Key lights to improve PBR look -->
+<a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+<a-entity light="type: directional; color: #fff0e0; intensity: 0.7" position="0.8 1.4 0.8"></a-entity>
+<a-entity light="type: directional; color: #e8f0ff; intensity: 0.3" position="-0.6 0.9 -0.7"></a-entity>
+<!-- Targets 0,1,2,3,6 عمداً بدون مدل تا فقط 4 و 5 نمایش داشته باشند -->
+<!-- targets.mind contains exactly one target, therefore the building image is targetIndex 0. -->
+<a-entity id="buildingTarget" mindar-image-target="targetIndex: 0">
+<a-entity geometry="primitive: plane; width: 1.35; height: 0.90" id="buildingImageOverlay" material="shader: flat; src: #buildingImage; transparent: true; side: double" position="0 0 0.03" visible="true">
+</a-entity>
+</a-entity>
+</a-scene>
+<script>
+        // Image-only AR fallback: the uploaded .mind file has one target (index 0).
+        (function () {
+            const target = document.getElementById('buildingTarget');
+            const image = document.getElementById('buildingImageOverlay');
+            if (!target || !image) return;
+            target.addEventListener('targetFound', () => {
+                image.setAttribute('visible', true);
+                if (image.object3D) image.object3D.visible = true;
+                console.log('[AR] Target 0 found — building image displayed.');
+            });
+            target.addEventListener('targetLost', () => {
+                image.setAttribute('visible', false);
+                if (image.object3D) image.object3D.visible = false;
+            });
+        })();
+    </script>
+<script>
         // Show AR controls and help button after scene is loaded and ready
         (function () {
             const controls = document.querySelector('.ar-bottom-controls');
@@ -807,7 +791,7 @@
             }
         })();
     </script>
-    <script>
+<script>
         // Snap model rotations: only adjust axes that aren't multiples of 90° so the model sits neatly on the target
         (function () {
             function isFiniteNumber(n) { return typeof n === 'number' && isFinite(n); }
@@ -839,7 +823,7 @@
             snapElRotationById('wheelModel');
         })();
     </script>
-    <script>
+<script>
         // Renderer quality & GLTF enhancements (MindAR scene)
         (function () {
             const sceneEl = document.getElementById('arScene');
@@ -1104,53 +1088,8 @@
             enhanceModelById('wheelModel');
         })();
     </script>
-    <script>
-        // Display glTF model load progress in the on-screen bar
-        (function () {
-            const overlay = document.getElementById('modelProgress');
-            const percentEl = document.getElementById('modelProgressPercent');
-            const fillEl = overlay ? overlay.querySelector('.model-progress__fill') : null;
-            if (!overlay || !percentEl || !fillEl) return;
 
-            function show() { overlay.classList.remove('hidden'); }
-            function hide() { overlay.classList.add('hidden'); }
-
-            function updateProgress(val) {
-                const capped = Math.min(100, Math.max(0, val || 0));
-                fillEl.style.width = capped.toFixed(1) + '%';
-                percentEl.textContent = Math.floor(capped) + '%';
-            }
-            function attach(el) {
-                if (!el || el.__progressAttached) return; el.__progressAttached = true;
-                el.addEventListener('model-progress', e => { show(); updateProgress(e.detail && e.detail.percent); });
-                el.addEventListener('model-loaded', () => {
-                    show(); updateProgress(100);
-                    percentEl.classList.add('done');
-                    setTimeout(() => { hide(); percentEl.classList.remove('done'); }, 1400);
-                });
-                el.addEventListener('model-error', () => {
-                    show(); fillEl.style.width = '100%'; percentEl.textContent = 'Load error';
-                });
-            }
-            // موجود فعلی
-            attach(document.getElementById('wheelModel'));
-            // مراقبت برای مدل Free AR که بعدا ایجاد می‌شود (id="gltf")
-            const mo = new MutationObserver(muts => {
-                for (const m of muts) {
-                    for (const n of m.addedNodes) {
-                        if (n.nodeType === 1) {
-                            if (n.id === 'gltf') attach(n);
-                            // در صورت ایجاد درون wrapper
-                            const g = n.querySelector && n.querySelector('#gltf');
-                            if (g) attach(g);
-                        }
-                    }
-                }
-            });
-            try { mo.observe(document.body, { childList: true, subtree: true }); } catch { }
-        })();
-    </script>
-    <script>
+<script>
         // HDRI Environment map (shared between MindAR and Free AR scenes)
         (function () {
             const HDRI_URL = 'https://rawcdn.githack.com/mrdoob/three.js/r152/examples/textures/equirectangular/royal_esplanade_1k.hdr';
@@ -1227,7 +1166,7 @@
             window.__ensureEnvForScene = ensureEnv;
         })();
     </script>
-    <script>
+<script>
         // مدیریت پایداری نمایش مدل (حالت MindAR) + انیمیشن ورود
         if (!window.FREE_MODE) (function () {
             // Micro stabilizer: deadband + lerp/slerp on container to mask phone micro shakes
@@ -1358,33 +1297,41 @@
             }
 
             function onFoundWheel() {
-                // Target 0 has been recognized. Keep the state in sync with onLostWheel().
-                state.active = 5;
                 const wheelModel = document.getElementById('wheelModel');
-                if (!wheelModel) return;
 
-                const startAnimation = () => {
-                    try {
-                        // aframe-extras provides animation-mixer and uses the clips
-                        // embedded in the GLB loaded by A-Frame's built-in gltf-model.
-                        wheelModel.removeAttribute('direct-gltf-animation');
-                        wheelModel.removeAttribute('animation-mixer');
-                        wheelModel.setAttribute('animation-mixer',
-                            'clip: *; loop: repeat; timeScale: 1');
-                        console.log('[AR] Target found; model loaded and animation requested.');
-                    } catch (e) {
-                        console.error('[AR] Could not start model animation:', e);
-                    }
-                };
+if (wheelModel) {
+    const startAnimation = () => {
+        try {
+            wheelModel.removeAttribute('animation-mixer');
+        } catch (e) {}
 
-                if (wheelModel.getObject3D('mesh')) {
-                    startAnimation();
-                } else {
-                    wheelModel.addEventListener('model-loaded', startAnimation, { once: true });
-                    wheelModel.addEventListener('model-error', (event) => {
-                        console.error('[AR] GLB model failed to load:', event.detail || event);
-                    }, { once: true });
-                }
+        try {
+            wheelModel.removeAttribute('direct-gltf-animation');
+        } catch (e) {}
+
+        wheelModel.setAttribute(
+            'direct-gltf-animation',
+            'loop: true; timeScale: 1'
+        );
+
+        setTimeout(() => {
+            const comp = wheelModel.components['direct-gltf-animation'];
+
+            if (comp && comp.play) {
+                comp.play();
+                console.log('✅ AR animation started');
+            }
+        }, 100);
+    };
+
+    if (wheelModel.getObject3D('mesh')) {
+        startAnimation();
+    } else {
+        wheelModel.addEventListener('model-loaded', startAnimation, {
+            once: true
+        });
+    }
+}
             }
 
             function onLostWheel() {
@@ -1409,27 +1356,10 @@
                 anchor0.addEventListener('targetLost', onLostWheel);
             }
 
-            // Target 5 has its own model instance so either intended target can work.
-            const anchor5 = document.getElementById('anchor5');
-            const wheelModel5 = document.getElementById('wheelModel5');
-            if (anchor5 && wheelModel5) {
-                anchor5.addEventListener('targetFound', () => {
-                    wheelModel5.setAttribute('visible', true);
-                    const start = () => wheelModel5.setAttribute('animation-mixer', 'clip: *; loop: repeat; timeScale: 1');
-                    if (wheelModel5.getObject3D('mesh')) start();
-                    else wheelModel5.addEventListener('model-loaded', start, { once: true });
-                    wheelModel5.addEventListener('model-error', e => console.error('[AR] Target 5 GLB load failed:', e.detail || e), { once: true });
-                });
-                anchor5.addEventListener('targetLost', () => {
-                    wheelModel5.removeAttribute('animation-mixer');
-                });
-            }
-
             // حذف ریست سخت استفاده‌نشده
         })();
     </script>
-
-    <script>
+<script>
         // Capability and camera permission checks (MindAR mode only)
         if (!window.FREE_MODE) (function () {
             const blocker = document.getElementById('arBlocker');
@@ -1480,7 +1410,7 @@
             if (document.readyState === 'complete') probe(); else window.addEventListener('load', probe);
         })();
     </script>
-    <script>
+<script>
         // عملکرد دکمه بازنشانی و اجرای انیمیشن (فقط در حالت MindAR)
         if (!window.FREE_MODE) (function () {
             const btn = document.getElementById('resetBtn');
@@ -1610,7 +1540,7 @@
             }
         })();
     </script>
-    <script>
+<script>
         // دکمه راهنما و پنل شیشه‌ای (در حالت FREE دکمه پنهان می‌شود)
         (function () {
             const btn = document.getElementById('helpBtn');
@@ -1629,9 +1559,8 @@
             document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('open')) close(); });
         })();
     </script>
-
-    <!-- حالت AR آزاد (WebXR hit-test + anchors) → در صورت FREE_MODE ساخته و فعال می‌شود -->
-    <script>
+<!-- حالت AR آزاد (WebXR hit-test + anchors) → در صورت FREE_MODE ساخته و فعال می‌شود -->
+<script>
         if (window.FREE_MODE) {
             // برخی عناصر نسخه MindAR را پنهان کن
             const resetBtn = document.getElementById('resetBtn');
@@ -1840,5 +1769,4 @@
         }
     </script>
 </body>
-
 </html>
