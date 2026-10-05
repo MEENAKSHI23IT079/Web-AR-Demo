@@ -1606,7 +1606,7 @@ if (window.FREE_MODE) {
   const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Move the green ring, then tap it to place the selected furniture.'; document.body.appendChild(hint);
   const toast=document.createElement('div'); toast.className='id-toast'; document.body.appendChild(toast);
   const reticle=document.createElement('div'); reticle.className='fallback-reticle'; reticle.innerHTML='<span class="outer"></span><span class="inner"></span><span class="cross-h"></span><span class="cross-v"></span><span class="label">Tap to place</span>'; document.body.appendChild(reticle);
-  const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture · tap an item to select</div><div class="id-row" id="itemRow"></div><div class="id-status" id="placedStatus">0 items placed</div></div><div class="id-card"><div class="id-actions"><button id="placeBtn" class="primary">Place Selected</button><button id="placeAllBtn" class="warn">Place All</button><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="repositionBtn">Move</button><button id="removeBtn">Remove</button><button id="saveBtn" class="primary">Save Design</button></div></div><div class="id-card"><div class="id-actions"><button id="resetBtn">Reset</button><button id="doneBtn" class="primary">Done</button></div><div class="save-note">Designs are saved on this browser. Use Save Design before leaving.</div></div>`; document.body.appendChild(panel);
+  const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture · tap an item to select</div><div class="id-row" id="itemRow"></div><div class="id-status" id="placedStatus">0 items placed · Tap and drag any placed item to move it</div></div><div class="id-card"><div class="id-actions"><button id="placeBtn" class="primary">Place Selected</button><button id="placeAllBtn" class="warn">Place All</button><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="repositionBtn">Move</button><button id="removeBtn">Remove</button><button id="saveBtn" class="primary">Save Design</button></div></div><div class="id-card"><div class="id-actions"><button id="resetBtn">Reset</button><button id="doneBtn" class="primary">Done</button></div><div class="save-note">Designs are saved on this browser. Use Save Design before leaving.</div></div>`; document.body.appendChild(panel);
 
   let stream=null, renderer=null, threeScene=null, camera=null, loader=null;
   let selectedId=plan.items[0]||'sofa', activeObject=null, reticleX=innerWidth/2, reticleY=innerHeight*.58, dragging=false;
@@ -1689,7 +1689,7 @@ if (window.FREE_MODE) {
   function beginPlacement(){if(!activeObject){activeObject=makeObject(selectedId);activeObject.visible=false}activeObject.visible=true;reticle.classList.remove('hidden');updateReticle()}
   function placeSelected(){if(!activeObject)beginPlacement();positionModelFromScreen(activeObject);activeObject.visible=true;if(!placedObjects.includes(activeObject))placedObjects.push(activeObject);reticle.classList.add('hidden');updateStatus();hint.textContent='Placed. Select another item and place it, or use Place All.';toastMsg(ITEM[selectedId].label+' placed')}
   function placeAll(){
-    const baseX=reticleX,baseY=reticleY; plan.items.forEach((id,i)=>{const obj=makeObject(id);const col=i%2,row=Math.floor(i/2);reticleX=Math.min(innerWidth-70,Math.max(70,baseX+(col-.5)*150));reticleY=Math.min(innerHeight*.70,Math.max(innerHeight*.38,baseY+row*100));positionModelFromScreen(obj);obj.visible=true;obj.rotation.y=(col?Math.PI/10:-Math.PI/10);placedObjects.push(obj)});reticleX=baseX;reticleY=baseY;activeObject=null;reticle.classList.add('hidden');updateStatus();hint.textContent='All recommended furniture placed. Tap Move after selecting an item to reposition it.';toastMsg('All recommended items placed')
+    const baseX=reticleX,baseY=reticleY; plan.items.forEach((id,i)=>{const obj=makeObject(id);const col=i%2,row=Math.floor(i/2);reticleX=Math.min(innerWidth-70,Math.max(70,baseX+(col-.5)*150));reticleY=Math.min(innerHeight*.70,Math.max(innerHeight*.38,baseY+row*100));positionModelFromScreen(obj);obj.visible=true;obj.rotation.y=(col?Math.PI/10:-Math.PI/10);placedObjects.push(obj)});reticleX=baseX;reticleY=baseY;activeObject=null;reticle.classList.add('hidden');updateStatus();hint.textContent='All recommended furniture placed. Tap any item and drag it to move it.';toastMsg('All recommended items placed')
   }
   function showReticle(){if(activeObject){activeObject.visible=true;positionModelFromScreen(activeObject)}reticle.classList.remove('hidden');hint.textContent='Move the green ring, then tap it to place '+ITEM[selectedId].label+'.'}
 
@@ -1709,10 +1709,35 @@ if (window.FREE_MODE) {
       toastMsg(restored?'Saved design restored':'Camera AR ready');
     }catch(e){console.error(e);hint.textContent='Camera access failed. Allow camera permission and reload the page.';toastMsg('Camera permission required')}}
 
-  function pointerMove(e){if(!dragging)return;const p=e.touches?e.touches[0]:e;reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.35,p.clientY));if(activeObject)positionModelFromScreen(activeObject);updateReticle()}
-  reticle.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;reticle.setPointerCapture?.(e.pointerId)});window.addEventListener('pointermove',pointerMove,{passive:false});window.addEventListener('pointerup',()=>dragging=false,{passive:true});reticle.addEventListener('click',e=>{e.stopPropagation();placeSelected()});
+  let objectDragging=false; let dragPointerId=null; let dragMoved=false;
+  function pointerMove(e){
+    if(objectDragging && activeObject){
+      e.preventDefault();
+      const p=e.touches?e.touches[0]:e;
+      dragMoved=true;
+      reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));
+      reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.28,p.clientY));
+      positionModelFromScreen(activeObject);
+      return;
+    }
+    if(!dragging)return;
+    const p=e.touches?e.touches[0]:e;
+    reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));
+    reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.35,p.clientY));
+    if(activeObject)positionModelFromScreen(activeObject);
+    updateReticle();
+  }
+  reticle.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();dragging=true;reticle.setPointerCapture?.(e.pointerId)});
+  window.addEventListener('pointermove',pointerMove,{passive:false});
+  window.addEventListener('pointerup',e=>{
+    if(objectDragging){objectDragging=false;dragPointerId=null;
+      if(activeObject){hint.textContent='Furniture selected. Drag it anywhere on the floor, or use Rotate / Size.';toastMsg(ITEM[selectedId].label+' moved');}
+    }
+    dragging=false;
+  },{passive:true});
+  reticle.addEventListener('click',e=>{e.stopPropagation();placeSelected()});
 
-  panel.querySelector('#placeBtn').onclick=()=>placeSelected(); panel.querySelector('#placeAllBtn').onclick=()=>placeAll(); panel.querySelector('#repositionBtn').onclick=()=>showReticle();
+  panel.querySelector('#placeBtn').onclick=()=>placeSelected(); panel.querySelector('#placeAllBtn').onclick=()=>placeAll(); panel.querySelector('#repositionBtn').onclick=()=>{if(activeObject){hint.textContent='Drag the selected '+ITEM[selectedId].label+' to move it.';toastMsg('Drag selected furniture to reposition it')}else toastMsg('Tap a placed item first')};
   panel.querySelector('#resetBtn').onclick=()=>{placedObjects.forEach(o=>threeScene.remove(o));placedObjects.length=0;activeObject=makeObject(selectedId);activeObject.visible=false;reticle.classList.remove('hidden');updateStatus();toastMsg('Room arrangement reset')};
   panel.querySelector('#removeBtn').onclick=()=>{if(activeObject&&placedObjects.includes(activeObject)){threeScene.remove(activeObject);placedObjects.splice(placedObjects.indexOf(activeObject),1);activeObject=null;updateStatus();toastMsg('Selected item removed')}else toastMsg('Select/place an item first')};
   panel.querySelector('#rotateL').onclick=()=>{if(activeObject)activeObject.rotation.y-=Math.PI/8};
@@ -1720,10 +1745,42 @@ if (window.FREE_MODE) {
   panel.querySelector('#saveBtn').onclick=()=>saveDesign();
   panel.querySelector('#doneBtn').onclick=()=>{saveDesign();if(stream)stream.getTracks().forEach(t=>t.stop());setTimeout(()=>location.href='index.html',600)};
 
-  // Select an already placed object by tapping roughly on its screen area.
-  canvas.style.pointerEvents='auto'; canvas.addEventListener('pointerdown',e=>{
-    const rect=canvas.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
-    const meshes=[];placedObjects.forEach(o=>o.traverse(n=>{if(n.isMesh)meshes.push(n)}));const hits=ray.intersectObjects(meshes,true);if(hits.length){let o=hits[0].object;while(o.parent&&!o.userData.itemId)o=o.parent;activeObject=o;selectedId=o.userData.itemId;renderItems();showReticle();toastMsg(ITEM[selectedId].label+' selected')}});
+  // Select and directly drag an already placed object.
+  // The furniture follows the finger/mouse over a virtual floor plane.
+  canvas.style.pointerEvents='auto';
+  canvas.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    const rect=canvas.getBoundingClientRect();
+    const mouse=new THREE.Vector2(
+      ((e.clientX-rect.left)/rect.width)*2-1,
+      -((e.clientY-rect.top)/rect.height)*2+1
+    );
+    const ray=new THREE.Raycaster();
+    ray.setFromCamera(mouse,camera);
+    const meshes=[];
+    placedObjects.forEach(o=>o.traverse(n=>{if(n.isMesh)meshes.push(n)}));
+    const hits=ray.intersectObjects(meshes,true);
+    if(!hits.length)return;
+
+    let o=hits[0].object;
+    while(o.parent && !o.userData.itemId)o=o.parent;
+    if(!o.userData.itemId)return;
+
+    activeObject=o;
+    selectedId=o.userData.itemId;
+    dragMoved=false;
+    objectDragging=true;
+    dragPointerId=e.pointerId;
+    canvas.setPointerCapture?.(e.pointerId);
+    reticle.classList.add('hidden');
+    hint.textContent='Drag the selected '+ITEM[selectedId].label+' to move it.';
+    renderItems();
+    // Put the selected object immediately under the finger, then keep following it.
+    reticleX=e.clientX;
+    reticleY=e.clientY;
+    positionModelFromScreen(activeObject);
+    toastMsg(ITEM[selectedId].label+' selected — drag to move');
+  });
 
   startCamera();
 })();
