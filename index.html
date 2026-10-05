@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
-    <title>Open AR Landing</title>
+    <title>AR Home Interior Designer</title>
     <link rel="icon" type="image/svg+xml" href="assets/img/Icon/app-icon.svg">
     <link rel="apple-touch-icon" href="assets/img/Icon/app-icon.svg">
     <link rel="manifest" href="manifest.json">
@@ -14,7 +14,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="assets/style.css?v=20260214-01" />
+    <link rel="stylesheet" href="assets/style.css?v=20261005-01" />
     <style>
         body.mes-landing {
             background: linear-gradient(180deg, #0f1745 0%, #233871 20%, #284082 50%, #233871 80%, #0f1745 100%) !important;
@@ -43,24 +43,43 @@
         .camera-warning strong {
             color: #ffb347;
         }
-    </style>
+    
+        .design-card{width:min(92vw,620px);box-sizing:border-box;margin:14px auto 0;padding:22px;border:1px solid rgba(255,255,255,.18);border-radius:24px;background:rgba(10,20,55,.58);backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:left}
+        .design-card h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}.design-subtitle{margin:0 0 16px;opacity:.82;font-size:13px;line-height:1.6}
+        .design-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.design-grid label{font-size:11px;opacity:.92}.design-grid select,.design-grid input{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:11px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.09);color:#fff;outline:none}.design-grid option{color:#111}
+        .plan-preview{margin:14px 0;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.07);font-size:12px;line-height:1.65}.plan-preview strong{color:#ffd18a}.plan-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.plan-tag{padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.1);font-size:10px}
+        @media(max-width:520px){.design-card{padding:17px}.design-card h1{font-size:22px}.design-grid{grid-template-columns:1fr}}
+</style>
     <link rel="dns-prefetch" href="https://aframe.io">
     <link rel="preconnect" href="https://aframe.io" crossorigin>
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="prefetch" href="ar-scene.html" as="document" />
+<script src="assets/interior-design.js"></script>
 </head>
 
 <body class="mes-landing">
     <main class="hero" id="hero">
         <div class="landing-stack">
-            <div class="top-basmallah">Open Augmented Reality Demo</div>
+            <div class="top-basmallah">AR HOME INTERIOR DESIGNER</div>
             <img class="corp-logo" src="assets/img/Icon/app-icon.svg" alt="AR experience icon" loading="lazy"
                 decoding="async" />
-            <button id="enterBtn" class="btn--main" type="button" disabled>...</button>
+            <section class="design-card" aria-label="Interior design preferences">
+                <h1>Design your room in AR</h1>
+                <p class="design-subtitle">Choose a room, style and budget. The rule-based design assistant creates a practical furniture plan before you enter AR.</p>
+                <div class="design-grid">
+                    <label>Room<select id="roomType"><option value="living">Living Room</option><option value="bedroom">Bedroom</option><option value="dining">Dining Room</option><option value="study">Study / Home Office</option></select></label>
+                    <label>Style<select id="styleType"><option value="modern">Modern</option><option value="minimal">Minimal</option><option value="scandi">Scandinavian</option><option value="boho">Boho</option><option value="classic">Classic</option></select></label>
+                    <label>Budget<select id="budgetType"><option value="low">Budget</option><option value="medium" selected>Comfort</option><option value="high">Premium</option></select></label>
+                    <label>Room size (sq.ft)<input id="roomArea" type="number" min="30" max="1000" value="140"></label>
+                    <label>Accent colour<select id="accentColor"><option value="auto">Auto</option><option value="terracotta">Terracotta</option><option value="sage">Sage Green</option><option value="navy">Navy Blue</option><option value="mustard">Mustard</option></select></label>
+                </div>
+                <div class="plan-preview" id="planPreview"></div>
+                <button id="enterBtn" class="btn--main btn--main-active" type="button">Start AR Interior Design</button>
+            </section>
             <div id="camWarn" class="camera-warning hidden" role="alert" aria-live="polite"></div>
             <div class="credit-block">
-                <div class="credit-text">Open-source demo. Use freely.</div>
+                <div class="credit-text">Rule-based room planning + WebXR furniture placement</div>
             </div>
         </div>
     </main>
@@ -80,15 +99,12 @@
         </div>
     </div>
     <script>
-        const LOCAL_SITE_VERSION = '20260214-01';
+        const LOCAL_SITE_VERSION = '20261005-01';
         const LIB_PRELOAD = [
             { id: 'aframe', url: 'https://aframe.io/releases/1.5.0/aframe.min.js' },
             { id: 'mindar', url: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js' }
         ];
-        const HEAVY_ASSETS = [
-            'assets/Gltf/model.glb?v=20260214-01',
-            'assets/Mind/targets.mind?v=20260214-01'
-        ];
+        const HEAVY_ASSETS = [];
 
         const loaderEl = document.getElementById('loader');
         const progressBar = document.getElementById('loaderProgress');
@@ -210,42 +226,25 @@
             });
         }
 
-        function goToAR() {
-            window.location.href = 'ar-scene.html';
-        }
+        function getInputs(){ return { room: document.getElementById('roomType')?.value || 'living', style: document.getElementById('styleType')?.value || 'modern', budget: document.getElementById('budgetType')?.value || 'medium', area: Number(document.getElementById('roomArea')?.value || 140), color: document.getElementById('accentColor')?.value || 'auto' }; }
+        function refreshPlan(){ const plan=InteriorDesignerLogic.generatePlan(getInputs()); const el=document.getElementById('planPreview'); if(el) el.innerHTML=`<strong>${plan.roomLabel} · ${plan.styleLabel}</strong> — estimated furniture budget ₹${plan.total.toLocaleString()} / ₹${plan.budgetMax.toLocaleString()}<div class="plan-tags">${plan.items.map(id=>`<span class="plan-tag">${InteriorDesignerLogic.ITEMS[id].label}</span>`).join('')}</div>`; return plan; }
+        function goToAR() { const plan=refreshPlan(); InteriorDesignerLogic.savePlan(plan); window.location.href = 'ar-scene.html?mode=free'; }
 
         async function handleEnter() {
             if (enterBtn.disabled) return;
-            const ok = await ensureCameraPermission();
-            if (!ok) return;
             cancelled = false;
-            const fallback = setTimeout(goToAR, 4000);
-            try {
-                await preloadLibraries();
-                clearTimeout(fallback);
-                goToAR();
-            } catch (e) {
-                clearTimeout(fallback);
-                console.warn('Preload failed, continuing to scene', e);
-                goToAR();
-            } finally {
-                hideLoader();
-            }
+            goToAR();
         }
 
         function init() {
             setupViewportUnits();
             const isMobile = detectMobileOrTablet();
-            if (isMobile) {
-                enterBtn.classList.add('btn--main-active');
-                enterBtn.textContent = 'Enter the AR experience';
-                enterBtn.disabled = false;
-                enterBtn.addEventListener('click', handleEnter, { passive: true });
-            } else {
-                enterBtn.classList.add('btn--main-disabled');
-                enterBtn.textContent = 'Use a mobile device to continue';
-                enterBtn.disabled = true;
-            }
+            enterBtn.disabled = false;
+            enterBtn.addEventListener('click', handleEnter, { passive: true });
+            if (!isMobile) { enterBtn.textContent = 'Start AR Interior Design (use a phone for AR)'; }
+            const controls=['roomType','styleType','budgetType','roomArea','accentColor'];
+            controls.forEach(id=>document.getElementById(id)?.addEventListener('input',refreshPlan));
+            refreshPlan();
 
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js').catch(() => { });

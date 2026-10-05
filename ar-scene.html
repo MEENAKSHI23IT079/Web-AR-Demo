@@ -11,13 +11,13 @@
 <meta content="yes" name="mobile-web-app-capable"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
-<title>Open AR Scene</title>
+<title>AR Home Interior Designer</title>
 <link href="assets/img/Icon/app-icon.svg" rel="icon" type="image/svg+xml"/>
 <link href="assets/img/Icon/app-icon.svg" rel="apple-touch-icon"/>
 <link href="manifest.json" rel="manifest"/>
-<link href="assets/style.css?v=20260214-01" rel="stylesheet">
-<link href="assets/reset-button.css?v=20260214-01" rel="stylesheet">
-<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20260214-01" rel="preload"/>
+<link href="assets/style.css?v=20261005-01" rel="stylesheet">
+<link href="assets/reset-button.css?v=20261005-01" rel="stylesheet">
+<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20261005-01" rel="preload"/>
 <!-- Progress bar styles -->
 <style>
         .model-progress {
@@ -343,7 +343,7 @@
     </script>
 <script>
         // نسخه سایت برای تشخیص آپدیت (version.json)
-        const LOCAL_SITE_VERSION = '20260214-01';
+        const LOCAL_SITE_VERSION = '20261005-01';
         async function checkSiteVersion() {
             try {
                 const resp = await fetch('version.json', { cache: 'no-store' });
@@ -677,6 +677,7 @@
 <link crossorigin="" href="https://unpkg.com" rel="preconnect"/>
 </link></link></head>
 <body>
+<script src="assets/interior-design.js"></script>
 
 
 <button aria-controls="helpPanel" aria-expanded="false" aria-haspopup="dialog" class="ar-help-btn" id="helpBtn">Help</button>
@@ -711,7 +712,7 @@
             HTTPS.</div>
 <button id="retryAR" type="button">Try again</button>
 </div>
-<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20260214-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
+<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20261005-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
 <a-assets>
 <img crossorigin="anonymous" id="buildingImage" src="assets/Gltf/building.png"/>
 </a-assets>
@@ -1559,214 +1560,80 @@ if (wheelModel) {
             document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('open')) close(); });
         })();
     </script>
-<!-- حالت AR آزاد (WebXR hit-test + anchors) → در صورت FREE_MODE ساخته و فعال می‌شود -->
+<!-- AR Home Interior Designer: rule-based recommendations + WebXR surface placement -->
 <script>
-        if (window.FREE_MODE) {
-            // برخی عناصر نسخه MindAR را پنهان کن
-            const resetBtn = document.getElementById('resetBtn');
-            const playBtn = document.getElementById('playAnimBtn');
-            const blocker = document.getElementById('arBlocker');
-            if (resetBtn) resetBtn.style.display = 'none';
-            if (playBtn) playBtn.style.display = 'none';
-            if (blocker) blocker.classList.add('hidden');
-            // صحنه MindAR را حذف کن تا با WebXR تداخل نداشته باشد
-            const oldScene = document.getElementById('arScene');
-            if (oldScene && oldScene.parentElement) oldScene.parentElement.removeChild(oldScene);
+if (window.FREE_MODE) {
+(function(){
+  const L=window.InteriorDesignerLogic;
+  const plan=L.loadPlan() || L.generatePlan({room:'living',style:'modern',budget:'medium',area:140,color:'auto'});
+  const ITEM=L.ITEMS;
+  const palette={terracotta:'#B85C48',sage:'#7A8F67',navy:'#334B72',mustard:'#D1A63A',auto:plan.palette[1]||'#A67C52'};
+  const accent=palette[plan.accent]||palette.auto;
+  const old=document.getElementById('arScene'); if(old) old.remove();
+  document.querySelectorAll('.ar-bottom-controls,.ar-help-btn,.ar-help-panel,.ar-blocker').forEach(e=>e.remove());
+  const style=document.createElement('style'); style.textContent=`
+    body{background:#10172b!important;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    .id-top{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:min(92vw,720px);z-index:20;background:rgba(13,20,42,.78);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:12px 14px;color:#fff;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.28)}
+    .id-top-title{font-weight:800;font-size:15px}.id-top-sub{font-size:11px;opacity:.72;margin-top:3px}.id-progress{height:5px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:9px}.id-progress span{display:block;height:100%;width:${Math.min(100,plan.utilization)}%;background:${accent};border-radius:5px}
+    .id-panel{position:fixed;left:12px;right:12px;bottom:12px;z-index:25;display:flex;flex-direction:column;gap:9px;pointer-events:none}.id-panel>*{pointer-events:auto}
+    .id-card{background:rgba(13,20,42,.84);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:10px;backdrop-filter:blur(14px);color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .id-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.id-row button{flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 11px;font-size:11px}.id-row button.active{background:${accent};border-color:transparent;color:#fff;font-weight:700}.id-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.id-actions button{border:0;border-radius:13px;padding:10px 5px;font-size:11px;font-weight:700;background:#fff;color:#17203b}.id-actions button.primary{background:${accent};color:#fff}.id-hint{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:15;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.48);color:#fff;font-size:11px;white-space:nowrap;backdrop-filter:blur(10px)}
+    .id-toast{position:fixed;top:132px;left:50%;transform:translateX(-50%);z-index:30;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.94);color:#15203b;font-size:11px;font-weight:700;opacity:0;transition:.25s;pointer-events:none}.id-toast.show{opacity:1}
+    @media(min-width:700px){.id-panel{left:18px;right:auto;width:390px}.id-top{top:18px}.id-hint{top:105px}}
+  `; document.head.appendChild(style);
 
-            // استایل‌های مختصر برای Overlay و دکمه‌ها
-            const style = document.createElement('style');
-            style.textContent = `
-            .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px;pointer-events:none;z-index:5}
-            .controls{display:flex;gap:14px;pointer-events:auto;align-items:center;justify-content:center;flex-wrap:wrap}
-            .btn{background:linear-gradient(135deg,#233871,#2d4588);color:#fff;border:1px solid rgba(255,255,255,.25);padding:10px 16px;font-size:13px;border-radius:16px;cursor:pointer;box-shadow:0 10px 26px -10px rgba(0,0,0,.7)}
-            .btn.secondary{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3)}
-            .top-hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 12px;font-size:13px;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:5}
-            .reticle-hint{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 12px;font-size:13px;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;z-index:5}
-            .reticle-hint.show{display:block}
-            `;
-            document.head.appendChild(style);
+  const top=document.createElement('div'); top.className='id-top'; top.innerHTML=`<div class="id-top-title">AR Home Interior Designer · ${plan.roomLabel}</div><div class="id-top-sub">${plan.styleLabel} style · ${plan.area} sq.ft · ₹${plan.total.toLocaleString()} estimated</div><div class="id-progress"><span></span></div>`; document.body.appendChild(top);
+  const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Scan the floor. When the ring appears, tap to place furniture.'; document.body.appendChild(hint);
+  const toast=document.createElement('div'); toast.className='id-toast'; document.body.appendChild(toast);
+  const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture</div><div class="id-row" id="itemRow"></div></div><div class="id-card"><div class="id-actions"><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="placeBtn" class="primary">Place</button></div></div><div class="id-card"><div class="id-actions"><button id="repositionBtn">Move</button><button id="resetBtn">Reset</button><button id="removeBtn">Remove</button><button id="doneBtn" class="primary">Done</button></div></div>`; document.body.appendChild(panel);
 
-            // Overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            overlay.id = 'overlay';
-            overlay.innerHTML = `
-                            <div class="controls">
-                                <button id="repositionBtn" class="btn secondary" type="button">Move model</button>
-                                <button id="resetBtn_free" class="btn" type="button">Reset model</button>
-                                <button id="playAnimBtn_free" class="btn" type="button">Play animation</button>
-                                <a href="index.html" class="btn secondary">Exit</a>
-                            </div>`;
-            document.body.appendChild(overlay);
+  document.body.id='idOverlay';
+  const scene=document.createElement('a-scene'); scene.id='freeScene'; scene.setAttribute('renderer','colorManagement: true; physicallyCorrectLights: true; antialias: true'); scene.setAttribute('vr-mode-ui','enabled:false'); scene.setAttribute('webxr','optionalFeatures: hit-test, anchors, dom-overlay; overlayElement: #idOverlay'); scene.setAttribute('device-orientation-permission-ui','enabled:false');
+  const amb=document.createElement('a-entity'); amb.setAttribute('light','type: ambient; color: #fff; intensity: 1.0'); scene.appendChild(amb); const dir=document.createElement('a-entity'); dir.setAttribute('light','type: directional; color: #fff; intensity: .8'); dir.setAttribute('position','1 3 2'); scene.appendChild(dir);
+  const ret=document.createElement('a-entity'); ret.id='reticle'; ret.setAttribute('visible','false'); ret.setAttribute('rotation','-90 0 0'); ret.setAttribute('geometry','primitive: ring; radiusInner: .055; radiusOuter: .07; segmentsTheta: 32'); ret.setAttribute('material',`shader: flat; color: ${accent}; opacity: .95; transparent: true`); scene.appendChild(ret);
+  const cam=document.createElement('a-camera'); cam.setAttribute('position','0 0 0'); scene.appendChild(cam); document.body.appendChild(scene);
 
-            // پیام‌های راهنما
-            const topHint = document.createElement('div');
-            topHint.className = 'top-hint';
-            topHint.id = 'topHint';
-            topHint.textContent = 'Aim at a flat surface (floor/table) until the ring appears';
-            document.body.appendChild(topHint);
-            const reticleHint = document.createElement('div');
-            reticleHint.className = 'reticle-hint'; reticleHint.id = 'reticleHint'; reticleHint.textContent = 'Tap the screen to place the model';
-            document.body.appendChild(reticleHint);
-
-            // ساخت صحنه WebXR Free AR
-            const scene = document.createElement('a-scene');
-            scene.id = 'freeScene';
-            scene.setAttribute('renderer', 'colorManagement: true, physicallyCorrectLights');
-            // VR UI حذف شد؛ ورود به AR با «tap-to-start» سفارشی انجام می‌شود
-            scene.setAttribute('vr-mode-ui', 'enabled: false');
-            scene.setAttribute('webxr', 'optionalFeatures: hit-test, anchors, dom-overlay; overlayElement: #overlay');
-            scene.setAttribute('device-orientation-permission-ui', 'enabled: false');
-
-            // نورها
-            const amb = document.createElement('a-entity'); amb.setAttribute('light', 'type: ambient; color: #fff; intensity: 0.8'); scene.appendChild(amb);
-            const dir = document.createElement('a-entity'); dir.setAttribute('light', 'type: directional; color: #fff; intensity: 0.6'); dir.setAttribute('position', '0 2 1'); scene.appendChild(dir);
-
-            // رتیکل
-            const reticle = document.createElement('a-entity');
-            reticle.id = 'reticle'; reticle.setAttribute('visible', 'false'); reticle.setAttribute('rotation', '-90 0 0');
-            reticle.setAttribute('geometry', 'primitive: ring; radiusInner: 0.06; radiusOuter: 0.075; segmentsTheta: 32');
-            reticle.setAttribute('material', 'color: #76d7ff; opacity: .9; metalness: 0; roughness: 1; shader: standard');
-            scene.appendChild(reticle);
-
-            // مدل و سایه
-            const modelC = document.createElement('a-entity');
-            modelC.id = 'modelContainer'; modelC.setAttribute('visible', 'false');
-            modelC.setAttribute('position', '0 0 0'); modelC.setAttribute('rotation', '0 0 0'); modelC.setAttribute('scale', '0.225 0.225 0.225');
-            modelC.setAttribute('data-init-rot', '0 0 0'); modelC.setAttribute('data-init-scale', '0.225 0.225 0.225');
-            modelC.setAttribute('drag-rotate', 'noPitchLimit: true; minScale: 0.08; maxScale: 0.8');
-            const shadow = document.createElement('a-entity'); shadow.setAttribute('geometry', 'primitive: circle; radius: 0.22; segments: 24'); shadow.setAttribute('rotation', '-90 0 0'); shadow.setAttribute('position', '0 -0.001 0'); shadow.setAttribute('material', 'shader: flat; color: #000; opacity: 0.22; transparent: true'); modelC.appendChild(shadow);
-            const gltf = document.createElement('a-entity'); gltf.id = 'gltf'; gltf.setAttribute('gltf-optimized', 'src: assets/Gltf/model.glb?v=20260214-01');
-            gltf.addEventListener('model-loaded', (ev) => {
-                const sceneEl = document.getElementById('freeScene');
-                const obj = ev.detail && ev.detail.model; if (!obj || !sceneEl) return;
-                const r = sceneEl.renderer; const maxAniso = r && r.capabilities.getMaxAnisotropy ? r.capabilities.getMaxAnisotropy() : 4;
-                const tmpHSL = { h: 0, s: 0, l: 0 };
-                const isOrange = (color) => { try { color.getHSL(tmpHSL); } catch { return false; } return tmpHSL.h >= 0.042 && tmpHSL.h <= 0.13; };
-                obj.traverse(n => {
-                    if (n.isMesh) {
-                        n.castShadow = true; n.receiveShadow = true;
-                        const mats = Array.isArray(n.material) ? n.material : [n.material];
-                        mats.forEach(m => {
-                            if (!m) return;
-                            if (m.map && 'colorSpace' in m.map) { m.map.colorSpace = THREE.SRGBColorSpace; m.map.needsUpdate = true; }
-                            if (typeof m.envMapIntensity === 'number') m.envMapIntensity = Math.max(0.9, m.envMapIntensity || 0.9);
-                            if (typeof m.metalness === 'number') {
-                                if (m.color && isOrange(m.color)) m.metalness = Math.min(m.metalness, 0.15);
-                            }
-                            if (typeof m.roughness === 'number') {
-                                if (m.color && isOrange(m.color)) m.roughness = Math.max(0.38, m.roughness);
-                                else m.roughness = Math.max(0.3, m.roughness);
-                            }
-                            ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap'].forEach(k => {
-                                if (m[k] && typeof m[k].anisotropy === 'number') m[k].anisotropy = Math.max(m[k].anisotropy || 0, maxAniso);
-                            });
-                            if (m.color && isOrange(m.color)) {
-                                try {
-                                    m.color.getHSL(tmpHSL);
-                                    const h = Math.max(0, tmpHSL.h - 0.012);
-                                    const s = Math.min(1, tmpHSL.s * 1.06);
-                                    const l = Math.max(0, Math.min(1, tmpHSL.l * 0.98));
-                                    m.color.setHSL(h, s, l);
-                                } catch { }
-                            }
-                            m.needsUpdate = true;
-                        });
-                    }
-                });
-            });
-            modelC.appendChild(gltf);
-            scene.appendChild(modelC);
-            const cam = document.createElement('a-camera'); cam.setAttribute('position', '0 0 0'); scene.appendChild(cam);
-
-            document.body.appendChild(scene);
-
-            // Tap-to-start AR: برای رعایت ژست کاربر در WebXR، با اولین کلیک وارد AR شو
-            (function () {
-                const startAR = () => {
-                    try { if (scene && scene.enterVR) scene.enterVR(); } catch { }
-                    window.removeEventListener('click', startAR, { passive: true });
-                    // اگر کاربر روی دکمه‌ای کلیک کرده بود، جلوی bubbling را نمی‌گیریم تا رفتار دکمه هم انجام شود
-                };
-                // فقط در حالت Free AR این handler را فعال کن
-                setTimeout(() => { window.addEventListener('click', startAR, { passive: true, once: true }); }, 0);
-            })();
-
-            // اسکریپت منطق WebXR (hit-test + anchors)
-            (function () {
-                const sceneEl = scene;
-                const ret = reticle;
-                const model = modelC;
-                const repositionBtn = document.getElementById('repositionBtn');
-                const resetBtn = document.getElementById('resetBtn_free');
-                const playBtn = document.getElementById('playAnimBtn_free');
-                const topHintEl = document.getElementById('topHint');
-                const reticleHintEl = document.getElementById('reticleHint');
-
-                let xrSession = null, xrRefSpace = null, viewerSpace = null, hitTestSource = null;
-                let xrAnchor = null, xrAnchorSpace = null, wantAnchor = false, lastHitResult = null;
-                let placed = false, relocating = false;
-
-                function animateScaleIn(el, toScale = 0.225, dur = 600) {
-                    try { if (el.__raf) cancelAnimationFrame(el.__raf); } catch { }
-                    const o = el.object3D; const from = 0.0; const to = toScale; const startY = o.position.y - 0.015; const baseY = o.position.y; o.scale.set(from, from, from); o.position.y = startY;
-                    const ease = t => 1 - Math.pow(1 - t, 3);
-                    const t0 = performance.now();
-                    function step(now) { const t = Math.min(1, (now - t0) / dur); const e = ease(t); const s = from + (to - from) * e; o.scale.set(s, s, s); o.position.y = startY + (baseY - startY) * e; if (t < 1) { el.__raf = requestAnimationFrame(step); } else { el.__raf = null; } }
-                    el.__raf = requestAnimationFrame(step);
-                }
-                async function setupHitTest(session) {
-                    try { viewerSpace = await session.requestReferenceSpace('viewer'); xrRefSpace = await session.requestReferenceSpace('local'); hitTestSource = await session.requestHitTestSource({ space: viewerSpace }); } catch (e) { console.warn('HitTest setup failed', e); }
-                }
-                function updateReticle(frame) {
-                    if (!hitTestSource || !xrRefSpace) return;
-                    const results = frame.getHitTestResults(hitTestSource);
-                    if (results.length > 0) {
-                        const hit = results[0]; lastHitResult = hit; const pose = hit.getPose(xrRefSpace); if (!pose) { ret.setAttribute('visible', false); return; }
-                        const m = new THREE.Matrix4(); m.fromArray(pose.transform.matrix); ret.object3D.matrix.copy(m); ret.object3D.matrix.decompose(ret.object3D.position, ret.object3D.quaternion, ret.object3D.scale);
-                        ret.setAttribute('visible', true); if (!placed || relocating) reticleHintEl.classList.add('show');
-                    } else { ret.setAttribute('visible', false); reticleHintEl.classList.remove('show'); }
-                }
-                function placeAtReticle() {
-                    if (!ret.getAttribute('visible')) return;
-                    model.object3D.position.copy(ret.object3D.position);
-                    model.object3D.quaternion.copy(ret.object3D.quaternion);
-                    if (!placed) { model.setAttribute('visible', true); animateScaleIn(model, 0.225, 650); }
-                    wantAnchor = true; placed = true; relocating = false; reticleHintEl.classList.remove('show');
-                }
-                function onSessionStarted(session) {
-                    xrSession = session; setupHitTest(session); topHintEl.style.display = 'block'; reticleHintEl.classList.add('show');
-                    const renderer = sceneEl.renderer; renderer.xr.setReferenceSpaceType('local'); renderer.xr.setSession(session);
-                    renderer.xr.addEventListener('sessionend', () => {
-                        try { if (xrAnchor && xrAnchor.delete) xrAnchor.delete(); } catch { }
-                        xrAnchor = null; xrAnchorSpace = null; wantAnchor = false; lastHitResult = null; xrSession = null; hitTestSource = null; xrRefSpace = null; viewerSpace = null;
-                        ret.setAttribute('visible', false); reticleHintEl.classList.remove('show');
-                    });
-                    session.addEventListener('select', () => { placeAtReticle(); });
-                    renderer.setAnimationLoop(async (t, frame) => {
-                        if (!frame) return; if (!placed || relocating) updateReticle(frame);
-                        if (wantAnchor && lastHitResult) {
-                            try {
-                                if (typeof lastHitResult.createAnchor === 'function') { xrAnchor = await lastHitResult.createAnchor(); xrAnchorSpace = xrAnchor && xrAnchor.anchorSpace; }
-                                else if (frame.createAnchor) { const pose = lastHitResult.getPose(xrRefSpace); if (pose) { const rigid = new XRRigidTransform(pose.transform); xrAnchor = await frame.createAnchor(rigid, xrRefSpace); xrAnchorSpace = xrAnchor && xrAnchor.anchorSpace; } }
-                            } catch (e) { /* anchors unsupported */ } finally { wantAnchor = false; }
-                        }
-                        if (xrAnchorSpace && xrRefSpace) { const ap = frame.getPose(xrAnchorSpace, xrRefSpace); if (ap) { const m = new THREE.Matrix4(); m.fromArray(ap.transform.matrix); model.object3D.matrix.copy(m); model.object3D.matrix.decompose(model.object3D.position, model.object3D.quaternion, model.object3D.scale); } }
-                    });
-                }
-                sceneEl.addEventListener('enter-vr', () => {
-                    if (!sceneEl.is('ar-mode')) return; const session = sceneEl.renderer.xr.getSession(); if (!session) return; onSessionStarted(session);
-                });
-                // Reposition
-                repositionBtn.addEventListener('click', () => { if (!xrSession) return; relocating = true; reticleHintEl.classList.add('show'); try { if (xrAnchor && xrAnchor.delete) xrAnchor.delete(); } catch { } xrAnchor = null; xrAnchorSpace = null; wantAnchor = false; });
-                // Reset
-                resetBtn.addEventListener('click', () => { try { if (model.__raf) cancelAnimationFrame(model.__raf); } catch { } const rotAttr = model.getAttribute('data-init-rot') || '0 0 0'; const scaleAttr = model.getAttribute('data-init-scale') || '0.225 0.225 0.225'; const r = rotAttr.split(/\s+/).map(Number); const s = scaleAttr.split(/\s+/).map(Number); const sx = s[0] || 0.225, sy = s[1] || sx, sz = s[2] || sx; model.setAttribute('rotation', { x: r[0] || 0, y: r[1] || 0, z: r[2] || 0 }); model.object3D.scale.set(sx, sy, sz); try { const mdl = document.getElementById('gltf'); mdl && mdl.removeAttribute('animation-mixer'); } catch { } animateScaleIn(model, sx, 400); });
-                // Play animations
-                playBtn.addEventListener('click', () => { const mdl = document.getElementById('gltf'); if (mdl) { try { mdl.removeAttribute('animation-mixer'); } catch { } mdl.setAttribute('animation-mixer', 'clip: *; loop: repeat; repetitions: Infinity; timeScale: 1;'); } playBtn.classList.add('pulse'); setTimeout(() => playBtn.classList.remove('pulse'), 300); });
-                // Tap to place as well
-                window.addEventListener('click', () => { const s = sceneEl.renderer?.xr?.getSession?.(); if (s && ret.getAttribute('visible')) placeAtReticle(); }, { passive: true });
-            })();
-        }
-    </script>
+  let selectedId=plan.items[0]||'sofa', model=null, placed=false, relocating=false, xrSession=null, xrRefSpace=null, viewerSpace=null, hitTestSource=null, lastHitResult=null, xrAnchorSpace=null, xrAnchor=null, wantAnchor=false;
+  const itemRow=panel.querySelector('#itemRow');
+  function toastMsg(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
+  function makePart(tag,attrs,parent){const e=document.createElement('a-'+tag); Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v)); parent.appendChild(e); return e;}
+  function clearModel(){if(model){model.parentElement?.removeChild(model);model=null;}}
+  function buildFurniture(id){clearModel(); const g=document.createElement('a-entity'); g.id='furniture'; g.setAttribute('position','0 0 0'); g.setAttribute('rotation','0 0 0'); g.setAttribute('scale','1 1 1'); g.setAttribute('shadow','cast:true;receive:true');
+    const wood=accent, dark='#263238', light='#E8E1D7';
+    if(id==='sofa'){makePart('box',{position:'0 .22 0',width:'1.65',height:'.42',depth:'.58',color:light},g); makePart('box',{position:'0 .58 .18',width:'1.65',height:'.62',depth:'.22',color:light},g); makePart('box',{position:'-.72 .08 0',width:'.12',height:'.3',depth:'.58',color:dark},g); makePart('box',{position:'.72 .08 0',width:'.12',height:'.3',depth:'.58',color:dark},g);}
+    else if(id==='coffeeTable'){makePart('box',{position:'0 .36 0',width:'1.0',height:'.08',depth:'.55',color:wood},g); for(const x of [-.42,.42]) for(const z of [-.2,.2]) makePart('cylinder',{position:`${x} .17 ${z}`,radius:'.035',height:'.38',color:dark},g);}
+    else if(id==='rug'){makePart('box',{position:'0 .01 0',width:'1.8',height:'.025',depth:'1.25',color:wood},g);}
+    else if(id==='plant'){makePart('cylinder',{position:'0 .18 0',radius:'.18',height:'.35',color:wood},g); makePart('sphere',{position:'0 .62 0',radius:'.38',color:'#5D7A55'},g); makePart('sphere',{position:'-.2 .72 .05',radius:'.24',color:'#6F8E63'},g); makePart('sphere',{position:'.2 .7 -.04',radius:'.25',color:'#55734E'},g);}
+    else if(id==='tvUnit'){makePart('box',{position:'0 .25 0',width:'1.5',height:'.5',depth:'.35',color:wood},g);makePart('box',{position:'0 .82 0',width:'1.15',height:'.62',depth:'.06',color:dark},g);}
+    else if(id==='bed'){makePart('box',{position:'0 .25 0',width:'1.65',height:'.25',depth:'2.05',color:light},g);makePart('box',{position:'0 .48 -.78',width:'1.65',height:'.7',depth:'.16',color:wood},g);makePart('box',{position:'-.55 .42 .45',width:'.55',height:'.12',depth:'.35',color:'#F8F6F2'},g);makePart('box',{position:'.55 .42 .45',width:'.55',height:'.12',depth:'.35',color:'#F8F6F2'},g);}
+    else if(id==='sideTable'){makePart('box',{position:'0 .45 0',width:'.5',height:'.08',depth:'.5',color:wood},g);makePart('cylinder',{position:'0 .22 0',radius:'.06',height:'.45',color:dark},g);}
+    else if(id==='lamp'){makePart('cylinder',{position:'0 .5 0',radius:'.035',height:'1.0',color:dark},g);makePart('cylinder',{position:'0 1.02 0',radius:'.22',height:'.18',color:light},g);}
+    else if(id==='diningTable'){makePart('cylinder',{position:'0 .48 0',radius:'.68',height:'.10',color:wood},g);makePart('cylinder',{position:'0 .24 0',radius:'.08',height:'.45',color:dark},g);}
+    else if(id==='desk'){makePart('box',{position:'0 .55 0',width:'1.25',height:'.09',depth:'.62',color:wood},g);for(const x of [-.52,.52])makePart('box',{position:`${x} .27 0`,width:'.07',height:'.55',depth:'.55',color:dark},g);}
+    else if(id==='chair'){makePart('box',{position:'0 .32 0',width:'.55',height:'.08',depth:'.55',color:wood},g);makePart('box',{position:'0 .68 -.18',width:'.55',height:'.7',depth:'.08',color:light},g);}
+    scene.appendChild(g); model=g; model.setAttribute('visible',false); return g;
+  }
+  function renderItems(){itemRow.innerHTML=''; plan.items.forEach(id=>{const b=document.createElement('button');b.textContent=ITEM[id].label;b.dataset.id=id;b.className=id===selectedId?'active':'';b.onclick=()=>{selectedId=id;renderItems();buildFurniture(id);toastMsg(ITEM[id].label+' selected')};itemRow.appendChild(b)});}
+  renderItems(); buildFurniture(selectedId);
+  function placeAtReticle(){if(!model||!ret.getAttribute('visible'))return; model.object3D.position.copy(ret.object3D.position);model.object3D.quaternion.copy(ret.object3D.quaternion);model.setAttribute('visible',true);placed=true;relocating=false;wantAnchor=true;toastMsg(ITEM[selectedId].label+' placed');}
+  function updateReticle(frame){if(!hitTestSource||!xrRefSpace)return;const rs=frame.getHitTestResults(hitTestSource);if(rs.length){lastHitResult=rs[0];const pose=lastHitResult.getPose(xrRefSpace);if(!pose)return;const m=new THREE.Matrix4();m.fromArray(pose.transform.matrix);ret.object3D.matrix.copy(m);ret.object3D.matrix.decompose(ret.object3D.position,ret.object3D.quaternion,ret.object3D.scale);ret.setAttribute('visible',true);hint.textContent=placed?'Tap Move, then tap the floor to reposition.':'Tap the floor to place '+ITEM[selectedId].label+'.';}else ret.setAttribute('visible',false);}
+  async function startXR(){try{if(scene.enterVR)await scene.enterVR()}catch(e){toastMsg('AR is not supported in this browser. Try Chrome on Android.')}}
+  async function setupHit(session){try{viewerSpace=await session.requestReferenceSpace('viewer');xrRefSpace=await session.requestReferenceSpace('local');hitTestSource=await session.requestHitTestSource({space:viewerSpace})}catch(e){toastMsg('Surface detection is unavailable')}}
+  function sessionStarted(session){xrSession=session;setupHit(session);const r=scene.renderer;r.xr.setReferenceSpaceType('local');r.xr.setSession(session);session.addEventListener('select',()=>{if(ret.getAttribute('visible'))placeAtReticle()});r.setAnimationLoop(async(t,frame)=>{if(!frame)return;if(!placed||relocating)updateReticle(frame);if(wantAnchor&&lastHitResult){try{if(lastHitResult.createAnchor){xrAnchor=await lastHitResult.createAnchor();xrAnchorSpace=xrAnchor.anchorSpace}}catch(e){}wantAnchor=false}if(xrAnchorSpace&&xrRefSpace&&placed&&!relocating){const p=frame.getPose(xrAnchorSpace,xrRefSpace);if(p){const m=new THREE.Matrix4();m.fromArray(p.transform.matrix);model.object3D.position.setFromMatrixPosition(m);}}});session.addEventListener('end',()=>{xrSession=null;hitTestSource=null;xrAnchorSpace=null;hint.textContent='AR session ended.'})}
+  scene.addEventListener('enter-vr',()=>{if(scene.is('ar-mode')){const s=scene.renderer.xr.getSession();if(s)sessionStarted(s)}});
+  window.addEventListener('click',()=>{if(xrSession&&ret.getAttribute('visible')&&(!placed||relocating))placeAtReticle()},{passive:true});
+  panel.querySelector('#placeBtn').onclick=()=>{if(!xrSession){startXR();return} if(ret.getAttribute('visible'))placeAtReticle(); else toastMsg('Move the phone until the floor ring appears')};
+  panel.querySelector('#repositionBtn').onclick=()=>{if(!xrSession){startXR();return}relocating=true;placed=false;hint.textContent='Move the phone to the new position and tap Place.'};
+  panel.querySelector('#resetBtn').onclick=()=>{if(model){model.object3D.rotation.set(0,0,0);model.object3D.scale.set(1,1,1)} toastMsg('Furniture reset')};
+  panel.querySelector('#removeBtn').onclick=()=>{if(model){model.setAttribute('visible',false);placed=false;toastMsg('Furniture hidden')}};
+  panel.querySelector('#rotateL').onclick=()=>{if(model)model.object3D.rotation.y-=Math.PI/8};
+  panel.querySelector('#scaleDown').onclick=()=>{if(model){const s=model.object3D.scale.x;const n=Math.max(.55,s-.1);model.object3D.scale.set(n,n,n)}};
+  panel.querySelector('#scaleUp').onclick=()=>{if(model){const s=model.object3D.scale.x;const n=Math.min(1.8,s+.1);model.object3D.scale.set(n,n,n)}};
+  panel.querySelector('#doneBtn').onclick=()=>{toastMsg('Design saved. Estimated budget ₹'+plan.total.toLocaleString());setTimeout(()=>{window.location.href='index.html'},900)};
+  // Start AR after an explicit user action; this keeps browser permission UX predictable.
+  panel.querySelector('#placeBtn').focus();
+})();
+}
+</script>
 </body>
 </html>
