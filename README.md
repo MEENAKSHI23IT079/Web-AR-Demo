@@ -43,3 +43,13 @@ Surface-placement AR requires WebXR AR support. Chrome on supported Android devi
 - Allow camera permission when prompted.
 - Tap **Place** first; then slowly move the phone across the floor until the AR ring appears.
 - If the page looks unchanged after a new deployment, use the browser's refresh/reload and clear the site's cached data. This version disables the service worker to prevent stale GitHub Pages files while developing.
+
+## Project Features (2026-10-05)
+- Rule-based room/style/budget recommendation engine
+- Mobile camera AR fallback for GitHub Pages
+- Realistic CC0/PBR GLB furniture where available, with primitive fallbacks
+- Multi-item placement: Place Selected and Place All Recommended
+- Rotate, resize, move, remove, and reset furniture
+- Save Design / My Saved Designs using browser localStorage
+- Saved designs can be reopened from the landing page
+- Designs are stored locally in the browser; a cloud database is not required for the demo

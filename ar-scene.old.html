@@ -15,9 +15,9 @@
 <link href="assets/img/Icon/app-icon.svg" rel="icon" type="image/svg+xml"/>
 <link href="assets/img/Icon/app-icon.svg" rel="apple-touch-icon"/>
 <link href="manifest.json" rel="manifest"/>
-<link href="assets/style.css?v=20261005-05" rel="stylesheet">
-<link href="assets/reset-button.css?v=20261005-05" rel="stylesheet">
-<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20261005-05" rel="preload"/>
+<link href="assets/style.css?v=20261005-02" rel="stylesheet">
+<link href="assets/reset-button.css?v=20261005-02" rel="stylesheet">
+<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20261005-02" rel="preload"/>
 <!-- Progress bar styles -->
 <style>
         .model-progress {
@@ -343,7 +343,7 @@
     </script>
 <script>
         // نسخه سایت برای تشخیص آپدیت (version.json)
-        const LOCAL_SITE_VERSION = '20261005-05';
+        const LOCAL_SITE_VERSION = '20261005-02';
         async function checkSiteVersion() {
             try {
                 const resp = await fetch('version.json', { cache: 'no-store' });
@@ -712,7 +712,7 @@
             HTTPS.</div>
 <button id="retryAR" type="button">Try again</button>
 </div>
-<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20261005-05; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
+<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20261005-02; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
 <a-assets>
 <img crossorigin="anonymous" id="buildingImage" src="assets/Gltf/building.png"/>
 </a-assets>
@@ -1560,73 +1560,52 @@ if (wheelModel) {
             document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('open')) close(); });
         })();
     </script>
-<!-- AR Home Interior Designer: stable camera AR + realistic GLB furniture + multi-item placement -->
+<!-- AR Home Interior Designer: rule-based recommendations + WebXR surface placement -->
 <script>
 if (window.FREE_MODE) {
 (function(){
+  // Stable mobile Camera-AR fallback. This intentionally avoids creating a second A-Frame
+  // renderer/canvas, which was causing the blinking/flickering seen on some Android browsers.
   const L=window.InteriorDesignerLogic;
   const plan=L.loadPlan() || L.generatePlan({room:'living',style:'modern',budget:'medium',area:140,color:'auto'});
   const ITEM=L.ITEMS;
   const palette={terracotta:'#B85C48',sage:'#7A8F67',navy:'#334B72',mustard:'#D1A63A',auto:plan.palette[1]||'#A67C52'};
   const accent=palette[plan.accent]||palette.auto;
 
-  // Public-domain / CC0 GLB assets. The app keeps primitive fallbacks if a model cannot be fetched.
-  const MODEL_URLS={
-    sofa:'https://www.innerscene.com/api/library/lowline-low-three-seat-sofa-4bb27e8c/download',
-    coffeeTable:'https://www.innerscene.com/api/library/trio-nesting-coffee-table-set-a1a295a4/download',
-    rug:'https://www.innerscene.com/api/library/rug-rectangle-beef54bd/download',
-    plant:'https://www.innerscene.com/api/library/anthurium-shrubs-9b542d34/download',
-    tvUnit:'https://www.innerscene.com/api/library/television-modern-9ac9fe77/download',
-    diningTable:'https://www.innerscene.com/api/library/wooden-table-618f9900/download'
-  };
-  const TARGET_SIZES={sofa:[2.6,.95,.84],coffeeTable:[1.14,.47,.74],rug:[1.8,.03,1.2],plant:[.9,.8,.9],tvUnit:[1.5,.8,.42],diningTable:[1.13,.8,.71]};
-
   document.querySelectorAll('.ar-bottom-controls,.ar-help-btn,.ar-help-panel,.ar-blocker,#arScene').forEach(e=>e.remove());
+
   const style=document.createElement('style'); style.textContent=`
     html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow:hidden;background:#000!important;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
     .id-camera{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:0}
     .id-three{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
     .id-top{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:min(92vw,720px);z-index:20;background:rgba(13,20,42,.78);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:12px 14px;color:#fff;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.28)}
     .id-top-title{font-weight:800;font-size:15px}.id-top-sub{font-size:11px;opacity:.72;margin-top:3px}.id-progress{height:5px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:9px}.id-progress span{display:block;height:100%;width:${Math.min(100,plan.utilization)}%;background:${accent};border-radius:5px}
-    .id-hint{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:20;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.58);color:#fff;font-size:11px;white-space:nowrap;backdrop-filter:blur(10px);pointer-events:none;max-width:90vw;text-align:center}
+    .id-hint{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:20;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.58);color:#fff;font-size:11px;white-space:nowrap;backdrop-filter:blur(10px);pointer-events:none}
     .id-toast{position:fixed;top:132px;left:50%;transform:translateX(-50%);z-index:40;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.95);color:#15203b;font-size:11px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}.id-toast.show{opacity:1}
     .fallback-reticle{position:fixed;left:50%;top:58%;width:92px;height:92px;transform:translate(-50%,-50%);z-index:18;display:block;pointer-events:auto;touch-action:none;cursor:pointer;filter:drop-shadow(0 5px 14px rgba(0,0,0,.55));}
     .fallback-reticle.hidden{display:none}.fallback-reticle .outer{position:absolute;inset:0;border:3px solid rgba(74,255,180,.98);border-radius:50%;box-sizing:border-box;animation:reticlePulse 1.25s ease-in-out infinite}.fallback-reticle .inner{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;background:rgba(74,255,180,.25);box-sizing:border-box}.fallback-reticle .cross-h,.fallback-reticle .cross-v{position:absolute;background:#fff;border-radius:2px}.fallback-reticle .cross-h{width:30px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}.fallback-reticle .cross-v{width:2px;height:30px;left:50%;top:50%;transform:translate(-50%,-50%)}.fallback-reticle .label{position:absolute;left:50%;top:105%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,12,25,.84);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800}
     @keyframes reticlePulse{0%,100%{transform:translate(-50%,-50%) scale(.94);opacity:.75}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
-    .id-panel{position:fixed;left:12px;right:12px;bottom:12px;z-index:25;display:flex;flex-direction:column;gap:8px;pointer-events:none}.id-panel>*{pointer-events:auto}.id-card{background:rgba(13,20,42,.88);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:10px;backdrop-filter:blur(14px);color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.3)}.id-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.id-row button{flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 11px;font-size:11px}.id-row button.active{background:${accent};border-color:transparent;font-weight:700}.id-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.id-actions button{border:0;border-radius:13px;padding:10px 4px;font-size:10.5px;font-weight:700;background:#fff;color:#17203b}.id-actions button.primary{background:${accent};color:#fff}.id-actions button.warn{background:#ffcf66;color:#1b2337}.id-status{font-size:10px;opacity:.78;margin-top:7px;text-align:center}.model-badge{position:fixed;right:12px;top:14px;z-index:30;padding:6px 9px;border-radius:999px;background:rgba(8,12,25,.7);color:#bdf8df;border:1px solid rgba(100,255,190,.25);font-size:9px;font-weight:700}.save-note{font-size:10px;opacity:.72;text-align:center;padding-top:2px}
-    @media(min-width:700px){.id-panel{left:18px;right:auto;width:440px}.id-top{top:18px}.id-hint{top:105px}}
+    .id-panel{position:fixed;left:12px;right:12px;bottom:12px;z-index:25;display:flex;flex-direction:column;gap:9px;pointer-events:none}.id-panel>*{pointer-events:auto}.id-card{background:rgba(13,20,42,.86);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:10px;backdrop-filter:blur(14px);color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.3)}.id-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.id-row button{flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 11px;font-size:11px}.id-row button.active{background:${accent};border-color:transparent;font-weight:700}.id-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.id-actions button{border:0;border-radius:13px;padding:11px 5px;font-size:11px;font-weight:700;background:#fff;color:#17203b}.id-actions button.primary{background:${accent};color:#fff}
+    @media(min-width:700px){.id-panel{left:18px;right:auto;width:390px}.id-top{top:18px}.id-hint{top:105px}}
   `; document.head.appendChild(style);
 
   const video=document.createElement('video'); video.className='id-camera'; video.autoplay=true; video.muted=true; video.playsInline=true; video.setAttribute('playsinline',''); document.body.appendChild(video);
   const canvas=document.createElement('canvas'); canvas.className='id-three'; canvas.setAttribute('aria-hidden','true'); document.body.appendChild(canvas);
+
   const top=document.createElement('div'); top.className='id-top'; top.innerHTML=`<div class="id-top-title">AR Home Interior Designer · ${plan.roomLabel}</div><div class="id-top-sub">${plan.styleLabel} style · ${plan.area} sq.ft · ₹${plan.total.toLocaleString()} estimated</div><div class="id-progress"><span></span></div>`; document.body.appendChild(top);
-  const badge=document.createElement('div'); badge.className='model-badge'; badge.textContent='REALISTIC 3D MODELS'; document.body.appendChild(badge);
-  const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Move the green ring, then tap it to place the selected furniture.'; document.body.appendChild(hint);
+  const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Move the green ring over the floor, then tap it to place furniture.'; document.body.appendChild(hint);
   const toast=document.createElement('div'); toast.className='id-toast'; document.body.appendChild(toast);
   const reticle=document.createElement('div'); reticle.className='fallback-reticle'; reticle.innerHTML='<span class="outer"></span><span class="inner"></span><span class="cross-h"></span><span class="cross-v"></span><span class="label">Tap to place</span>'; document.body.appendChild(reticle);
-  const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture · tap an item to select</div><div class="id-row" id="itemRow"></div><div class="id-status" id="placedStatus">0 items placed</div></div><div class="id-card"><div class="id-actions"><button id="placeBtn" class="primary">Place Selected</button><button id="placeAllBtn" class="warn">Place All</button><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="repositionBtn">Move</button><button id="removeBtn">Remove</button><button id="saveBtn" class="primary">Save Design</button></div></div><div class="id-card"><div class="id-actions"><button id="resetBtn">Reset</button><button id="doneBtn" class="primary">Done</button></div><div class="save-note">Designs are saved on this browser. Use Save Design before leaving.</div></div>`; document.body.appendChild(panel);
+  const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture</div><div class="id-row" id="itemRow"></div></div><div class="id-card"><div class="id-actions"><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="placeBtn" class="primary">Place</button></div></div><div class="id-card"><div class="id-actions"><button id="repositionBtn">Move</button><button id="resetBtn">Reset</button><button id="removeBtn">Remove</button><button id="doneBtn" class="primary">Done</button></div></div>`; document.body.appendChild(panel);
 
-  let stream=null, renderer=null, threeScene=null, camera=null, loader=null;
-  let selectedId=plan.items[0]||'sofa', activeObject=null, reticleX=innerWidth/2, reticleY=innerHeight*.58, dragging=false;
-  const placedObjects=[];
-  const itemRow=panel.querySelector('#itemRow'); const placedStatus=panel.querySelector('#placedStatus');
-  const toastMsg=t=>{toast.textContent=t;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1800)};
-  const key='arInteriorSavedDesigns';
-
-  function saveDesign(){
-    const placements=placedObjects.map((o,i)=>({id:o.userData.itemId,index:i,x:o.position.x,y:o.position.y,z:o.position.z,scale:o.scale.x,rotation:o.rotation.y}));
-    const design={id:'design-'+Date.now(),savedAt:new Date().toISOString(),plan,placements};
-    let all=[]; try{all=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
-    all.unshift(design); all=all.slice(0,12); localStorage.setItem(key,JSON.stringify(all)); localStorage.setItem('arInteriorPlan',JSON.stringify(plan)); localStorage.setItem('arInteriorPlacements',JSON.stringify(placements));
-    toastMsg('Design saved to My Designs');
-    return design;
-  }
-  function updateStatus(){placedStatus.textContent=`${placedObjects.length} item${placedObjects.length===1?'':'s'} placed${activeObject?' · '+ITEM[activeObject.userData.itemId].label+' selected':''}`}
+  let stream=null, renderer=null, threeScene=null, camera=null, model=null, selectedId=plan.items[0]||'sofa', placed=false, scale=1, rotation=0, reticleX=innerWidth/2, reticleY=innerHeight*.58, dragging=false;
+  const itemRow=panel.querySelector('#itemRow');
+  const toastMsg=t=>{toast.textContent=t;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1600)};
 
   function material(c,rough=.72){return new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:.04})}
   function box(g,w,h,d,x,y,z,c){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(c));m.position.set(x,y,z);g.add(m);return m}
   function cyl(g,r,h,x,y,z,c){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32),material(c));m.position.set(x,y,z);g.add(m);return m}
-  function fallbackFurniture(id){const g=new THREE.Group(); const wood=accent,dark='#263238',light='#E8E1D7';
+  function buildFurniture(id){if(model) threeScene.remove(model); const g=new THREE.Group(); const wood=accent,dark='#263238',light='#E8E1D7';
     if(id==='sofa'){box(g,1.65,.42,.58,0,.34,0,light);box(g,1.65,.58,.18,0,.72,.20,light);box(g,.18,.52,.62,-.73,.60,0,wood);box(g,.18,.52,.62,.73,.60,0,wood);box(g,.58,.20,.58,-.48,.62,-.04,light);box(g,.58,.20,.58,.48,.62,-.04,light)}
     else if(id==='coffeeTable'){box(g,1.1,.10,.62,0,.45,0,wood);for(const x of[-.43,.43])for(const z of[-.22,.22])box(g,.07,.45,.07,x,.22,z,dark)}
     else if(id==='rug'){const m=new THREE.Mesh(new THREE.BoxGeometry(1.8,.025,1.2),material(accent));m.position.y=.02;g.add(m)}
@@ -1638,78 +1617,45 @@ if (window.FREE_MODE) {
     else if(id==='diningTable'){cyl(g,.68,.10,0,.52,0,wood);cyl(g,.08,.48,0,.27,0,dark)}
     else if(id==='desk'){box(g,1.25,.09,.62,0,.56,0,wood);for(const x of[-.52,.52])box(g,.07,.55,.55,x,.28,0,dark)}
     else if(id==='chair'){box(g,.55,.08,.55,0,.35,0,wood);box(g,.55,.7,.08,0,.70,-.22,light);for(const x of[-.20,.20])box(g,.06,.32,.06,x,.17,0,dark)}
-    return g;
+    threeScene.add(g); model=g; model.scale.setScalar(scale); model.rotation.y=rotation; model.visible=placed; return g;
   }
-
-  function normalizeModel(obj,id){
-    obj.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=false;const mats=Array.isArray(n.material)?n.material:[n.material];mats.forEach(m=>{if(m&&m.map&&'colorSpace' in m.map){m.map.colorSpace=THREE.SRGBColorSpace;m.needsUpdate=true}})}});
-    const box3=new THREE.Box3().setFromObject(obj), size=box3.getSize(new THREE.Vector3()), target=TARGET_SIZES[id]||[1,1,1];
-    const sx=target[0]/Math.max(size.x,.001), sy=target[1]/Math.max(size.y,.001), sz=target[2]/Math.max(size.z,.001); const s=Math.min(sx,sy,sz); obj.scale.setScalar(s);
-    const b2=new THREE.Box3().setFromObject(obj); const center=b2.getCenter(new THREE.Vector3()); obj.position.sub(center); const b3=new THREE.Box3().setFromObject(obj); obj.position.y += -b3.min.y;
-  }
-
-  function makeObject(id){
-    const wrapper=new THREE.Group(); wrapper.userData.itemId=id; wrapper.userData.loaded=false; wrapper.visible=true;
-    const fallback=fallbackFurniture(id); wrapper.add(fallback); fallback.visible=true;
-    if(loader && MODEL_URLS[id]){
-      loader.load(MODEL_URLS[id], gltf=>{
-        try{const real=gltf.scene||gltf.scenes?.[0]; if(!real)return; normalizeModel(real,id); real.visible=true; fallback.visible=false; wrapper.add(real); wrapper.userData.loaded=true; wrapper.userData.model=real; toastMsg(ITEM[id].label+' realistic 3D model loaded');}catch(e){console.warn('model setup failed',e)}
-      },undefined,err=>console.warn('realistic model unavailable, fallback kept',id,err));
-    }
-    threeScene.add(wrapper); return wrapper;
-  }
-
-  function renderItems(){itemRow.innerHTML='';plan.items.forEach(id=>{const b=document.createElement('button');b.textContent=ITEM[id].label;b.className=id===selectedId?'active':'';b.onclick=()=>{selectedId=id;activeObject=null;reticle.classList.remove('hidden');hint.textContent='Move the green ring, then tap it to place '+ITEM[id].label+'.';renderItems();toastMsg(ITEM[id].label+' selected')};itemRow.appendChild(b)})}
+  function renderItems(){itemRow.innerHTML='';plan.items.forEach(id=>{const b=document.createElement('button');b.textContent=ITEM[id].label;b.className=id===selectedId?'active':'';b.onclick=()=>{selectedId=id;placed=false;reticle.classList.remove('hidden');buildFurniture(id);toastMsg(ITEM[id].label+' selected')};itemRow.appendChild(b)})}
 
   function setupThree(){
-    renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:false}); renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5)); renderer.setSize(innerWidth,innerHeight,false); renderer.setClearColor(0x000000,0);
+    renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:false});
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5)); renderer.setSize(innerWidth,innerHeight,false); renderer.setClearColor(0x000000,0);
     threeScene=new THREE.Scene(); camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.01,100); camera.position.set(0,0,0);
-    threeScene.add(new THREE.AmbientLight(0xffffff,2.1)); const d=new THREE.DirectionalLight(0xffffff,1.6);d.position.set(1,3,2);threeScene.add(d);
-    try{loader=new THREE.GLTFLoader()}catch(e){console.warn('GLTFLoader unavailable; fallback models will be used')}
-    renderItems();
+    threeScene.add(new THREE.AmbientLight(0xffffff,1.7)); const d=new THREE.DirectionalLight(0xffffff,1.2);d.position.set(1,3,2);threeScene.add(d);
+    buildFurniture(selectedId); renderItems();
     const resize=()=>{renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();reticleX=Math.min(innerWidth-50,Math.max(50,reticleX));reticleY=Math.min(innerHeight*.72,Math.max(innerHeight*.38,reticleY));updateReticle()}; window.addEventListener('resize',resize,{passive:true}); window.addEventListener('orientationchange',()=>setTimeout(resize,250),{passive:true});
-    const animate=()=>{renderer.render(threeScene,camera);requestAnimationFrame(animate)};requestAnimationFrame(animate);
+    const animate=()=>{renderer.render(threeScene,camera);requestAnimationFrame(animate)}; requestAnimationFrame(animate);
   }
-  function updateReticle(){reticle.style.left=reticleX+'px';reticle.style.top=reticleY+'px';if(!activeObject) return; positionModelFromScreen(activeObject)}
-  function positionModelFromScreen(obj){if(!obj||!camera)return;const x=(reticleX/innerWidth)*2-1,y=-(reticleY/innerHeight)*2+1,ndc=new THREE.Vector3(x,y,.5).unproject(camera),dir=ndc.sub(camera.position).normalize(),floorY=-.62;if(Math.abs(dir.y)<.001)return;const t=(floorY-camera.position.y)/dir.y;if(t<=0)return;const p=dir.multiplyScalar(t);obj.position.copy(p);obj.position.y=floorY}
-  function beginPlacement(){if(!activeObject){activeObject=makeObject(selectedId);activeObject.visible=false}activeObject.visible=true;reticle.classList.remove('hidden');updateReticle()}
-  function placeSelected(){if(!activeObject)beginPlacement();positionModelFromScreen(activeObject);activeObject.visible=true;if(!placedObjects.includes(activeObject))placedObjects.push(activeObject);reticle.classList.add('hidden');updateStatus();hint.textContent='Placed. Select another item and place it, or use Place All.';toastMsg(ITEM[selectedId].label+' placed')}
-  function placeAll(){
-    const baseX=reticleX,baseY=reticleY; plan.items.forEach((id,i)=>{const obj=makeObject(id);const col=i%2,row=Math.floor(i/2);reticleX=Math.min(innerWidth-70,Math.max(70,baseX+(col-.5)*150));reticleY=Math.min(innerHeight*.70,Math.max(innerHeight*.38,baseY+row*100));positionModelFromScreen(obj);obj.visible=true;obj.rotation.y=(col?Math.PI/10:-Math.PI/10);placedObjects.push(obj)});reticleX=baseX;reticleY=baseY;activeObject=null;reticle.classList.add('hidden');updateStatus();hint.textContent='All recommended furniture placed. Tap Move after selecting an item to reposition it.';toastMsg('All recommended items placed')
-  }
-  function showReticle(){if(activeObject){activeObject.visible=true;positionModelFromScreen(activeObject)}reticle.classList.remove('hidden');hint.textContent='Move the green ring, then tap it to place '+ITEM[selectedId].label+'.'}
+  function updateReticle(){reticle.style.left=reticleX+'px';reticle.style.top=reticleY+'px';if(!placed)positionModelFromScreen()}
+  function positionModelFromScreen(){if(!model||!camera)return;const x=(reticleX/innerWidth)*2-1;const y=-(reticleY/innerHeight)*2+1;const ndc=new THREE.Vector3(x,y,.5).unproject(camera);const dir=ndc.sub(camera.position).normalize();const floorY=-.62;if(Math.abs(dir.y)<.001)return;const t=(floorY-camera.position.y)/dir.y;if(t<=0)return;const p=dir.multiplyScalar(t);model.position.copy(p);model.position.y=floorY;}
+  function place(){if(!model)return;positionModelFromScreen();model.visible=true;placed=true;reticle.classList.add('hidden');hint.textContent='Furniture placed. Use Rotate / Size, or Move to reposition.';toastMsg(ITEM[selectedId].label+' placed')}
+  function showReticle(){placed=false;model.visible=false;reticle.classList.remove('hidden');hint.textContent='Move the green ring over the floor, then tap it to place '+ITEM[selectedId].label+'.';updateReticle()}
 
-  function restoreSavedPlacements(){
-    let saved=[]; try{saved=JSON.parse(localStorage.getItem('arInteriorPlacements')||'[]')}catch(e){saved=[]}
-    if(!Array.isArray(saved)||!saved.length)return false;
-    saved.forEach((p)=>{const obj=makeObject(p.id);obj.position.set(Number(p.x)||0,Number(p.y)||-.62,Number(p.z)||-2);const sc=Number(p.scale)||1;obj.scale.setScalar(sc);obj.rotation.y=Number(p.rotation)||0;obj.visible=true;placedObjects.push(obj)});
-    activeObject=null; updateStatus(); hint.textContent='Saved arrangement restored. Select an item or add more furniture.'; reticle.classList.add('hidden'); return true;
+  async function startCamera(){
+    try{
+      if(!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable');
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+      video.srcObject=stream; await video.play(); setupThree(); showReticle(); toastMsg('Camera AR ready');
+    }catch(e){console.error(e);hint.textContent='Camera access failed. Allow camera permission and reload the page.';toastMsg('Camera permission required')}
   }
 
-  async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera API unavailable');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});video.srcObject=stream;await video.play();
-      // Ensure GLTFLoader is available before the AR scene starts.
-      if(!window.THREE?.GLTFLoader){await new Promise((resolve)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/loaders/GLTFLoader.js';s.onload=resolve;s.onerror=resolve;document.head.appendChild(s)})}
-      setupThree();
-      const restored=restoreSavedPlacements();
-      if(!restored){activeObject=makeObject(selectedId);activeObject.visible=false;reticle.classList.remove('hidden');updateReticle();}
-      toastMsg(restored?'Saved design restored':'Camera AR ready');
-    }catch(e){console.error(e);hint.textContent='Camera access failed. Allow camera permission and reload the page.';toastMsg('Camera permission required')}}
+  function pointerMove(e){if(!dragging)return;const p=e.touches?e.touches[0]:e;reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.35,p.clientY));updateReticle()}
+  reticle.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;reticle.setPointerCapture?.(e.pointerId)});
+  window.addEventListener('pointermove',pointerMove,{passive:false}); window.addEventListener('pointerup',()=>dragging=false,{passive:true});
+  reticle.addEventListener('click',e=>{e.stopPropagation();place()});
 
-  function pointerMove(e){if(!dragging)return;const p=e.touches?e.touches[0]:e;reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.35,p.clientY));if(activeObject)positionModelFromScreen(activeObject);updateReticle()}
-  reticle.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;reticle.setPointerCapture?.(e.pointerId)});window.addEventListener('pointermove',pointerMove,{passive:false});window.addEventListener('pointerup',()=>dragging=false,{passive:true});reticle.addEventListener('click',e=>{e.stopPropagation();placeSelected()});
-
-  panel.querySelector('#placeBtn').onclick=()=>placeSelected(); panel.querySelector('#placeAllBtn').onclick=()=>placeAll(); panel.querySelector('#repositionBtn').onclick=()=>showReticle();
-  panel.querySelector('#resetBtn').onclick=()=>{placedObjects.forEach(o=>threeScene.remove(o));placedObjects.length=0;activeObject=makeObject(selectedId);activeObject.visible=false;reticle.classList.remove('hidden');updateStatus();toastMsg('Room arrangement reset')};
-  panel.querySelector('#removeBtn').onclick=()=>{if(activeObject&&placedObjects.includes(activeObject)){threeScene.remove(activeObject);placedObjects.splice(placedObjects.indexOf(activeObject),1);activeObject=null;updateStatus();toastMsg('Selected item removed')}else toastMsg('Select/place an item first')};
-  panel.querySelector('#rotateL').onclick=()=>{if(activeObject)activeObject.rotation.y-=Math.PI/8};
-  panel.querySelector('#scaleDown').onclick=()=>{if(activeObject)activeObject.scale.multiplyScalar(.9)}; panel.querySelector('#scaleUp').onclick=()=>{if(activeObject)activeObject.scale.multiplyScalar(1.1)};
-  panel.querySelector('#saveBtn').onclick=()=>saveDesign();
-  panel.querySelector('#doneBtn').onclick=()=>{saveDesign();if(stream)stream.getTracks().forEach(t=>t.stop());setTimeout(()=>location.href='index.html',600)};
-
-  // Select an already placed object by tapping roughly on its screen area.
-  canvas.style.pointerEvents='auto'; canvas.addEventListener('pointerdown',e=>{
-    const rect=canvas.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
-    const meshes=[];placedObjects.forEach(o=>o.traverse(n=>{if(n.isMesh)meshes.push(n)}));const hits=ray.intersectObjects(meshes,true);if(hits.length){let o=hits[0].object;while(o.parent&&!o.userData.itemId)o=o.parent;activeObject=o;selectedId=o.userData.itemId;renderItems();showReticle();toastMsg(ITEM[selectedId].label+' selected')}});
+  panel.querySelector('#placeBtn').onclick=()=>place();
+  panel.querySelector('#repositionBtn').onclick=()=>showReticle();
+  panel.querySelector('#resetBtn').onclick=()=>{scale=1;rotation=0;if(model){model.scale.setScalar(1);model.rotation.y=0}showReticle();toastMsg('Furniture reset')};
+  panel.querySelector('#removeBtn').onclick=()=>{if(model)model.visible=false;showReticle();toastMsg('Furniture removed')};
+  panel.querySelector('#rotateL').onclick=()=>{rotation-=Math.PI/8;if(model)model.rotation.y=rotation};
+  panel.querySelector('#scaleDown').onclick=()=>{scale=Math.max(.55,scale-.1);if(model)model.scale.setScalar(scale)};
+  panel.querySelector('#scaleUp').onclick=()=>{scale=Math.min(1.8,scale+.1);if(model)model.scale.setScalar(scale)};
+  panel.querySelector('#doneBtn').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());toastMsg('Design saved · ₹'+plan.total.toLocaleString());setTimeout(()=>location.href='index.html',700)};
 
   startCamera();
 })();

@@ -14,7 +14,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="assets/style.css?v=20261005-02" />
+    <link rel="stylesheet" href="assets/style.css?v=20261005-05" />
     <style>
         body.mes-landing {
             background: linear-gradient(180deg, #0f1745 0%, #233871 20%, #284082 50%, #233871 80%, #0f1745 100%) !important;
@@ -78,6 +78,7 @@
                 <button id="enterBtn" class="btn--main btn--main-active" type="button">Start AR Interior Design</button>
             </section>
             <div id="camWarn" class="camera-warning hidden" role="alert" aria-live="polite"></div>
+            <section class="design-card" id="savedDesignsCard" style="margin-top:14px;display:none"><h2 style="font-size:18px;margin:0 0 8px">My Saved Designs</h2><p class="design-subtitle">Your saved room plans are stored in this browser.</p><div id="savedDesignsList"></div><button id="clearSavedBtn" class="btn--main" type="button" style="margin-top:10px">Clear Saved Designs</button></section>
             <div class="credit-block">
                 <div class="credit-text">Rule-based room planning + WebXR furniture placement</div>
             </div>
@@ -100,7 +101,7 @@
         </div>
     </div>
     <script>
-        const LOCAL_SITE_VERSION = '20261005-02';
+        const LOCAL_SITE_VERSION = '20261005-05';
         const LIB_PRELOAD = [
             { id: 'aframe', url: 'https://aframe.io/releases/1.5.0/aframe.min.js' },
             { id: 'mindar', url: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js' }
@@ -273,6 +274,13 @@
         cancelBtn?.addEventListener('click', () => { cancelled = true; hideLoader(); });
         window.addEventListener('load', init, { once: true });
     </script>
+<script>
+(function(){
+ const key='arInteriorSavedDesigns', card=document.getElementById('savedDesignsCard'), list=document.getElementById('savedDesignsList'), clear=document.getElementById('clearSavedBtn');
+ function render(){let items=[];try{items=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){} if(!items.length){card.style.display='none';return} card.style.display='block'; list.innerHTML=''; items.forEach((d,i)=>{const el=document.createElement('div');el.style.cssText='padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12)';const date=new Date(d.savedAt);el.innerHTML=`<div style="font-weight:700;font-size:13px">${d.plan.roomLabel} · ${d.plan.styleLabel}</div><div style="font-size:11px;opacity:.72;margin:3px 0 8px">${d.plan.area} sq.ft · ₹${Number(d.plan.total).toLocaleString()} · ${date.toLocaleString()}</div><button class="btn--main" data-open="${i}" type="button" style="padding:9px 12px;font-size:11px">Open Design</button>`;list.appendChild(el)}); list.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{const d=items[Number(b.dataset.open)];localStorage.setItem('arInteriorPlan',JSON.stringify(d.plan));localStorage.setItem('arInteriorPlacements',JSON.stringify(d.placements||[]));location.href='ar-scene.html'});}
+ clear.onclick=()=>{localStorage.removeItem(key);localStorage.removeItem('arInteriorPlacements');render()}; render();
+})();
+</script>
 </body>
 
 </html>
