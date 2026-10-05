@@ -34,3 +34,12 @@ The main flow is:
 ## Browser note
 
 Surface-placement AR requires WebXR AR support. Chrome on supported Android devices is the safest demo target. If a browser does not support WebXR hit-test, the original MindAR image-tracking mode remains in the project and can be opened by removing `?mode=free` from the scene URL.
+
+
+## Mobile troubleshooting
+
+- Deploy with **GitHub Pages** and open the `https://...github.io/.../` URL, not a `file://` URL.
+- For surface-placement AR, use **Chrome on a supported Android phone**. iPhone/iOS browsers do not currently provide the same WebXR immersive-AR support needed by this mode.
+- Allow camera permission when prompted.
+- Tap **Place** first; then slowly move the phone across the floor until the AR ring appears.
+- If the page looks unchanged after a new deployment, use the browser's refresh/reload and clear the site's cached data. This version disables the service worker to prevent stale GitHub Pages files while developing.

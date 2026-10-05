@@ -83,6 +83,7 @@
             </div>
         </div>
     </main>
+    <div id="arSupportStatus" style="margin:12px auto;max-width:680px;text-align:center;font-size:12px;opacity:.75"></div>
     <noscript>
         <div
             style="direction:ltr;text-align:center;padding:18px 24px;margin:24px auto;max-width:420px;border-radius:18px;background:#2d2d31;color:#ffcb8b;font-family:'Vazirmatn',system-ui,sans-serif;line-height:1.8;box-shadow:0 6px 30px -12px rgba(0,0,0,.55);border:1px solid rgba(255,203,139,.35);">
@@ -228,6 +229,16 @@
 
         function getInputs(){ return { room: document.getElementById('roomType')?.value || 'living', style: document.getElementById('styleType')?.value || 'modern', budget: document.getElementById('budgetType')?.value || 'medium', area: Number(document.getElementById('roomArea')?.value || 140), color: document.getElementById('accentColor')?.value || 'auto' }; }
         function refreshPlan(){ const plan=InteriorDesignerLogic.generatePlan(getInputs()); const el=document.getElementById('planPreview'); if(el) el.innerHTML=`<strong>${plan.roomLabel} · ${plan.styleLabel}</strong> — estimated furniture budget ₹${plan.total.toLocaleString()} / ₹${plan.budgetMax.toLocaleString()}<div class="plan-tags">${plan.items.map(id=>`<span class="plan-tag">${InteriorDesignerLogic.ITEMS[id].label}</span>`).join('')}</div>`; return plan; }
+        async function checkARSupport() {
+            const status = document.getElementById('arSupportStatus');
+            if (!status) return;
+            if (!window.isSecureContext) { status.textContent = '⚠ Open this GitHub Pages site using HTTPS.'; return; }
+            if (!navigator.xr) { status.textContent = '⚠ WebXR is unavailable. Use Chrome on a supported Android phone.'; return; }
+            try {
+                const ok = await navigator.xr.isSessionSupported('immersive-ar');
+                status.textContent = ok ? '✓ AR supported on this device' : '⚠ This device does not support immersive AR';
+            } catch { status.textContent = '⚠ Unable to check AR support'; }
+        }
         function goToAR() { const plan=refreshPlan(); InteriorDesignerLogic.savePlan(plan); window.location.href = 'ar-scene.html?mode=free'; }
 
         async function handleEnter() {
@@ -237,6 +248,7 @@
         }
 
         function init() {
+            checkARSupport();
             setupViewportUnits();
             const isMobile = detectMobileOrTablet();
             enterBtn.disabled = false;
@@ -246,7 +258,7 @@
             controls.forEach(id=>document.getElementById(id)?.addEventListener('input',refreshPlan));
             refreshPlan();
 
-            if ('serviceWorker' in navigator) {
+            if (false && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js').catch(() => { });
                 navigator.serviceWorker.addEventListener('message', (evt) => {
                     if (evt.data?.type === 'SW_VERSION') console.log('[SW] Active version', evt.data.version);
