@@ -1654,6 +1654,14 @@ if (window.FREE_MODE) {
   function makeObject(id){
     const wrapper=new THREE.Group(); wrapper.userData.itemId=id; wrapper.userData.loaded=false; wrapper.visible=true;
     const fallback=fallbackFurniture(id); wrapper.add(fallback); fallback.visible=true;
+    // Invisible-but-raycastable interaction volume. This makes thin/flat GLBs
+    // such as rugs and transparent plant/TV parts easy to grab on a phone.
+    const hs=TARGET_SIZES[id]||[1,1,1];
+    const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,depthTest:false});
+    const hitProxy=new THREE.Mesh(new THREE.BoxGeometry(hs[0],Math.max(hs[1],.18),hs[2]),hitMat);
+    hitProxy.position.y=Math.max(hs[1]/2,.09);
+    hitProxy.userData.hitProxy=true;
+    wrapper.add(hitProxy);
     if(loader && MODEL_URLS[id]){
       const useReal=(scene)=>{
         try{
@@ -1685,7 +1693,25 @@ if (window.FREE_MODE) {
     const animate=()=>{renderer.render(threeScene,camera);requestAnimationFrame(animate)};requestAnimationFrame(animate);
   }
   function updateReticle(){reticle.style.left=reticleX+'px';reticle.style.top=reticleY+'px';if(!activeObject) return; positionModelFromScreen(activeObject)}
-  function positionModelFromScreen(obj){if(!obj||!camera)return;const x=(reticleX/innerWidth)*2-1,y=-(reticleY/innerHeight)*2+1,ndc=new THREE.Vector3(x,y,.5).unproject(camera),dir=ndc.sub(camera.position).normalize(),floorY=-.62;if(Math.abs(dir.y)<.001)return;const t=(floorY-camera.position.y)/dir.y;if(t<=0)return;const p=dir.multiplyScalar(t);obj.position.copy(p);obj.position.y=floorY}
+  // Convert a screen position to a stable virtual floor position.
+  // The old implementation stopped moving when the finger crossed the camera
+  // horizon (the ray pointed upward). This version keeps the furniture on a
+  // large virtual floor and clamps the usable screen area instead of freezing.
+  const virtualFloor=new THREE.Plane(new THREE.Vector3(0,1,0),0.62);
+  const dragRaycaster=new THREE.Raycaster();
+  function positionModelFromScreen(obj){
+    if(!obj||!camera)return;
+    const sx=Math.min(innerWidth-18,Math.max(18,reticleX));
+    const sy=Math.min(innerHeight*.78,Math.max(innerHeight*.40,reticleY));
+    const ndc=new THREE.Vector2((sx/innerWidth)*2-1,-(sy/innerHeight)*2+1);
+    dragRaycaster.setFromCamera(ndc,camera);
+    const hit=new THREE.Vector3();
+    if(dragRaycaster.ray.intersectPlane(virtualFloor,hit)){
+      obj.position.x=hit.x;
+      obj.position.y=-.62;
+      obj.position.z=hit.z;
+    }
+  }
   function beginPlacement(){if(!activeObject){activeObject=makeObject(selectedId);activeObject.visible=false}activeObject.visible=true;reticle.classList.remove('hidden');updateReticle()}
   function placeSelected(){if(!activeObject)beginPlacement();positionModelFromScreen(activeObject);activeObject.visible=true;if(!placedObjects.includes(activeObject))placedObjects.push(activeObject);reticle.classList.add('hidden');updateStatus();hint.textContent='Placed. Select another item and place it, or use Place All.';toastMsg(ITEM[selectedId].label+' placed')}
   function placeAll(){
@@ -1711,15 +1737,7 @@ if (window.FREE_MODE) {
 
   let objectDragging=false; let dragPointerId=null; let dragMoved=false;
   function pointerMove(e){
-    if(objectDragging && activeObject){
-      e.preventDefault();
-      const p=e.touches?e.touches[0]:e;
-      dragMoved=true;
-      reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));
-      reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.28,p.clientY));
-      positionModelFromScreen(activeObject);
-      return;
-    }
+    if(objectDragging)return;
     if(!dragging)return;
     const p=e.touches?e.touches[0]:e;
     reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));
@@ -1729,12 +1747,7 @@ if (window.FREE_MODE) {
   }
   reticle.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();dragging=true;reticle.setPointerCapture?.(e.pointerId)});
   window.addEventListener('pointermove',pointerMove,{passive:false});
-  window.addEventListener('pointerup',e=>{
-    if(objectDragging){objectDragging=false;dragPointerId=null;
-      if(activeObject){hint.textContent='Furniture selected. Drag it anywhere on the floor, or use Rotate / Size.';toastMsg(ITEM[selectedId].label+' moved');}
-    }
-    dragging=false;
-  },{passive:true});
+  window.addEventListener('pointerup',e=>{dragging=false},{passive:true});
   reticle.addEventListener('click',e=>{e.stopPropagation();placeSelected()});
 
   panel.querySelector('#placeBtn').onclick=()=>placeSelected(); panel.querySelector('#placeAllBtn').onclick=()=>placeAll(); panel.querySelector('#repositionBtn').onclick=()=>{if(activeObject){hint.textContent='Drag the selected '+ITEM[selectedId].label+' to move it.';toastMsg('Drag selected furniture to reposition it')}else toastMsg('Tap a placed item first')};
@@ -1745,42 +1758,70 @@ if (window.FREE_MODE) {
   panel.querySelector('#saveBtn').onclick=()=>saveDesign();
   panel.querySelector('#doneBtn').onclick=()=>{saveDesign();if(stream)stream.getTracks().forEach(t=>t.stop());setTimeout(()=>location.href='index.html',600)};
 
-  // Select and directly drag an already placed object.
-  // The furniture follows the finger/mouse over a virtual floor plane.
+  // Select and directly drag ANY placed furniture item.
+  // We listen on the whole window so transparent GLB models, rugs, plants,
+  // and TV units all receive the same touch interaction.
   canvas.style.pointerEvents='auto';
-  canvas.addEventListener('pointerdown',e=>{
-    e.preventDefault();
+  const objectRaycaster=new THREE.Raycaster();
+  const pointer=new THREE.Vector2();
+  function objectAt(clientX,clientY){
+    if(!camera||!placedObjects.length)return null;
     const rect=canvas.getBoundingClientRect();
-    const mouse=new THREE.Vector2(
-      ((e.clientX-rect.left)/rect.width)*2-1,
-      -((e.clientY-rect.top)/rect.height)*2+1
-    );
-    const ray=new THREE.Raycaster();
-    ray.setFromCamera(mouse,camera);
+    pointer.x=((clientX-rect.left)/rect.width)*2-1;
+    pointer.y=-((clientY-rect.top)/rect.height)*2+1;
+    objectRaycaster.setFromCamera(pointer,camera);
     const meshes=[];
-    placedObjects.forEach(o=>o.traverse(n=>{if(n.isMesh)meshes.push(n)}));
-    const hits=ray.intersectObjects(meshes,true);
-    if(!hits.length)return;
-
+    placedObjects.forEach(o=>o.traverse(n=>{if(n.isMesh&&n.visible)meshes.push(n)}));
+    const hits=objectRaycaster.intersectObjects(meshes,true);
+    if(!hits.length)return null;
     let o=hits[0].object;
-    while(o.parent && !o.userData.itemId)o=o.parent;
-    if(!o.userData.itemId)return;
-
-    activeObject=o;
-    selectedId=o.userData.itemId;
-    dragMoved=false;
+    while(o && !o.userData.itemId)o=o.parent;
+    return o&&o.userData.itemId?o:null;
+  }
+  function beginObjectDrag(e){
+    if(e.target.closest && (e.target.closest('.id-panel') || e.target.closest('.fallback-reticle') || e.target.closest('.id-top') || e.target.closest('.id-hint')))return;
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    const target=objectAt(e.clientX,e.clientY);
+    if(!target)return;
+    e.preventDefault();
+    e.stopPropagation();
+    activeObject=target;
+    selectedId=target.userData.itemId;
     objectDragging=true;
     dragPointerId=e.pointerId;
-    canvas.setPointerCapture?.(e.pointerId);
+    dragMoved=false;
     reticle.classList.add('hidden');
-    hint.textContent='Drag the selected '+ITEM[selectedId].label+' to move it.';
-    renderItems();
-    // Put the selected object immediately under the finger, then keep following it.
     reticleX=e.clientX;
     reticleY=e.clientY;
     positionModelFromScreen(activeObject);
+    renderItems();
+    hint.textContent='Drag '+ITEM[selectedId].label+' anywhere on the floor.';
     toastMsg(ITEM[selectedId].label+' selected — drag to move');
-  });
+    try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+  }
+  function moveObject(e){
+    if(!objectDragging||!activeObject||e.pointerId!==dragPointerId)return;
+    e.preventDefault();
+    e.stopPropagation();
+    reticleX=e.clientX;
+    reticleY=e.clientY;
+    positionModelFromScreen(activeObject);
+    dragMoved=true;
+  }
+  function endObjectDrag(e){
+    if(!objectDragging||e.pointerId!==dragPointerId)return;
+    objectDragging=false;
+    dragPointerId=null;
+    if(activeObject){
+      hint.textContent='Furniture moved. Drag any item again, or use Rotate / Size.';
+      updateStatus();
+    }
+  }
+  // Capture before the camera/video layer can consume the touch.
+  window.addEventListener('pointerdown',beginObjectDrag,{capture:true,passive:false});
+  window.addEventListener('pointermove',moveObject,{capture:true,passive:false});
+  window.addEventListener('pointerup',endObjectDrag,{capture:true,passive:false});
+  window.addEventListener('pointercancel',endObjectDrag,{capture:true,passive:false});
 
   startCamera();
 })();
