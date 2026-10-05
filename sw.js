@@ -1,13 +1,13 @@
 // Service Worker: offline caching and versioned updates
-const SITE_VERSION = "20261005-01";
+const SITE_VERSION = "20261005-02";
 const CACHE_NAME = `open-ar-${SITE_VERSION}`;
 const CORE_ASSETS = [
   "index.html",
   "ar-scene.html",
   "landing.html",
   "manifest.json",
-  "assets/style.css?v=20261005-01",
-  "assets/reset-button.css?v=20261005-01",
+  "assets/style.css?v=20261005-02",
+  "assets/reset-button.css?v=20261005-02",
   "assets/img/Icon/app-icon.svg",
   "version.json",
 ];

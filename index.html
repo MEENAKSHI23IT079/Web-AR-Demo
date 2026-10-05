@@ -14,7 +14,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="assets/style.css?v=20261005-01" />
+    <link rel="stylesheet" href="assets/style.css?v=20261005-02" />
     <style>
         body.mes-landing {
             background: linear-gradient(180deg, #0f1745 0%, #233871 20%, #284082 50%, #233871 80%, #0f1745 100%) !important;
@@ -100,7 +100,7 @@
         </div>
     </div>
     <script>
-        const LOCAL_SITE_VERSION = '20261005-01';
+        const LOCAL_SITE_VERSION = '20261005-02';
         const LIB_PRELOAD = [
             { id: 'aframe', url: 'https://aframe.io/releases/1.5.0/aframe.min.js' },
             { id: 'mindar', url: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js' }
@@ -259,7 +259,7 @@
             refreshPlan();
 
             if (false && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js').catch(() => { });
+                if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(()=>{}); }
                 navigator.serviceWorker.addEventListener('message', (evt) => {
                     if (evt.data?.type === 'SW_VERSION') console.log('[SW] Active version', evt.data.version);
                 });

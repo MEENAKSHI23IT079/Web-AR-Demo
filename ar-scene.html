@@ -15,9 +15,9 @@
 <link href="assets/img/Icon/app-icon.svg" rel="icon" type="image/svg+xml"/>
 <link href="assets/img/Icon/app-icon.svg" rel="apple-touch-icon"/>
 <link href="manifest.json" rel="manifest"/>
-<link href="assets/style.css?v=20261005-01" rel="stylesheet">
-<link href="assets/reset-button.css?v=20261005-01" rel="stylesheet">
-<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20261005-01" rel="preload"/>
+<link href="assets/style.css?v=20261005-02" rel="stylesheet">
+<link href="assets/reset-button.css?v=20261005-02" rel="stylesheet">
+<link as="fetch" crossorigin="" href="assets/Mind/targets.mind?v=20261005-02" rel="preload"/>
 <!-- Progress bar styles -->
 <style>
         .model-progress {
@@ -343,7 +343,7 @@
     </script>
 <script>
         // نسخه سایت برای تشخیص آپدیت (version.json)
-        const LOCAL_SITE_VERSION = '20261005-01';
+        const LOCAL_SITE_VERSION = '20261005-02';
         async function checkSiteVersion() {
             try {
                 const resp = await fetch('version.json', { cache: 'no-store' });
@@ -712,7 +712,7 @@
             HTTPS.</div>
 <button id="retryAR" type="button">Try again</button>
 </div>
-<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20261005-01; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
+<a-scene class="ar-hidden" color-space="sRGB" device-orientation-permission-ui="enabled: false" id="arScene" mindar-image="imageTargetSrc: assets/Mind/targets.mind?v=20261005-02; filterMinCF: 0.00001; filterBeta: 0.0025; warmupTolerance: 6; missTolerance: 18;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; powerPreference: high-performance" vr-mode-ui="enabled: false">
 <a-assets>
 <img crossorigin="anonymous" id="buildingImage" src="assets/Gltf/building.png"/>
 </a-assets>
@@ -1564,199 +1564,100 @@ if (wheelModel) {
 <script>
 if (window.FREE_MODE) {
 (function(){
+  // Stable mobile Camera-AR fallback. This intentionally avoids creating a second A-Frame
+  // renderer/canvas, which was causing the blinking/flickering seen on some Android browsers.
   const L=window.InteriorDesignerLogic;
   const plan=L.loadPlan() || L.generatePlan({room:'living',style:'modern',budget:'medium',area:140,color:'auto'});
   const ITEM=L.ITEMS;
   const palette={terracotta:'#B85C48',sage:'#7A8F67',navy:'#334B72',mustard:'#D1A63A',auto:plan.palette[1]||'#A67C52'};
   const accent=palette[plan.accent]||palette.auto;
-  const old=document.getElementById('arScene'); if(old) old.remove();
-  document.querySelectorAll('.ar-bottom-controls,.ar-help-btn,.ar-help-panel,.ar-blocker').forEach(e=>e.remove());
+
+  document.querySelectorAll('.ar-bottom-controls,.ar-help-btn,.ar-help-panel,.ar-blocker,#arScene').forEach(e=>e.remove());
+
   const style=document.createElement('style'); style.textContent=`
-    body{background:#10172b!important;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow:hidden;background:#000!important;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    .id-camera{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:0}
+    .id-three{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
     .id-top{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:min(92vw,720px);z-index:20;background:rgba(13,20,42,.78);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:12px 14px;color:#fff;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.28)}
     .id-top-title{font-weight:800;font-size:15px}.id-top-sub{font-size:11px;opacity:.72;margin-top:3px}.id-progress{height:5px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:9px}.id-progress span{display:block;height:100%;width:${Math.min(100,plan.utilization)}%;background:${accent};border-radius:5px}
-    .id-panel{position:fixed;left:12px;right:12px;bottom:12px;z-index:25;display:flex;flex-direction:column;gap:9px;pointer-events:none}.id-panel>*{pointer-events:auto}
-    .id-card{background:rgba(13,20,42,.84);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:10px;backdrop-filter:blur(14px);color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.25)}
-    .id-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.id-row button{flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 11px;font-size:11px}.id-row button.active{background:${accent};border-color:transparent;color:#fff;font-weight:700}.id-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.id-actions button{border:0;border-radius:13px;padding:10px 5px;font-size:11px;font-weight:700;background:#fff;color:#17203b}.id-actions button.primary{background:${accent};color:#fff}.id-hint{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:15;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.48);color:#fff;font-size:11px;white-space:nowrap;backdrop-filter:blur(10px)}
-    .id-toast{position:fixed;top:132px;left:50%;transform:translateX(-50%);z-index:30;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.94);color:#15203b;font-size:11px;font-weight:700;opacity:0;transition:.25s;pointer-events:none}.id-toast.show{opacity:1}
-    /* Camera fallback placement reticle. This is a manual visual placement aid when WebXR hit-test is unavailable. */
-    .fallback-reticle{position:fixed;left:50%;top:49%;width:92px;height:92px;transform:translate(-50%,-50%);z-index:18;display:none;pointer-events:auto;touch-action:none;cursor:pointer;filter:drop-shadow(0 5px 14px rgba(0,0,0,.45));}
-    .fallback-reticle.show{display:block}
-    .fallback-reticle .outer{position:absolute;inset:0;border:3px solid rgba(74,255,180,.95);border-radius:50%;box-sizing:border-box;animation:reticlePulse 1.35s ease-in-out infinite;}
-    .fallback-reticle .inner{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;box-sizing:border-box;background:rgba(74,255,180,.22);}
-    .fallback-reticle .cross-h,.fallback-reticle .cross-v{position:absolute;background:rgba(255,255,255,.9);border-radius:2px;}
-    .fallback-reticle .cross-h{width:30px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}
-    .fallback-reticle .cross-v{width:2px;height:30px;left:50%;top:50%;transform:translate(-50%,-50%)}
-    .fallback-reticle .label{position:absolute;left:50%;top:102%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,12,25,.82);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800;backdrop-filter:blur(8px)}
-    @keyframes reticlePulse{0%,100%{transform:scale(.94);opacity:.72}50%{transform:scale(1.06);opacity:1}}
-    .fallback-help{position:fixed;left:50%;top:calc(49% + 60px);transform:translateX(-50%);z-index:17;display:none;white-space:nowrap;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;pointer-events:none}
-    .fallback-help.show{display:block}
-    @media(max-width:380px){.fallback-reticle{width:78px;height:78px}.fallback-reticle .label{font-size:9px}.fallback-help{font-size:9px}}
+    .id-hint{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:20;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.58);color:#fff;font-size:11px;white-space:nowrap;backdrop-filter:blur(10px);pointer-events:none}
+    .id-toast{position:fixed;top:132px;left:50%;transform:translateX(-50%);z-index:40;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.95);color:#15203b;font-size:11px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}.id-toast.show{opacity:1}
+    .fallback-reticle{position:fixed;left:50%;top:58%;width:92px;height:92px;transform:translate(-50%,-50%);z-index:18;display:block;pointer-events:auto;touch-action:none;cursor:pointer;filter:drop-shadow(0 5px 14px rgba(0,0,0,.55));}
+    .fallback-reticle.hidden{display:none}.fallback-reticle .outer{position:absolute;inset:0;border:3px solid rgba(74,255,180,.98);border-radius:50%;box-sizing:border-box;animation:reticlePulse 1.25s ease-in-out infinite}.fallback-reticle .inner{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;background:rgba(74,255,180,.25);box-sizing:border-box}.fallback-reticle .cross-h,.fallback-reticle .cross-v{position:absolute;background:#fff;border-radius:2px}.fallback-reticle .cross-h{width:30px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}.fallback-reticle .cross-v{width:2px;height:30px;left:50%;top:50%;transform:translate(-50%,-50%)}.fallback-reticle .label{position:absolute;left:50%;top:105%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,12,25,.84);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800}
+    @keyframes reticlePulse{0%,100%{transform:translate(-50%,-50%) scale(.94);opacity:.75}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
+    .id-panel{position:fixed;left:12px;right:12px;bottom:12px;z-index:25;display:flex;flex-direction:column;gap:9px;pointer-events:none}.id-panel>*{pointer-events:auto}.id-card{background:rgba(13,20,42,.86);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:10px;backdrop-filter:blur(14px);color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.3)}.id-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.id-row button{flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 11px;font-size:11px}.id-row button.active{background:${accent};border-color:transparent;font-weight:700}.id-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.id-actions button{border:0;border-radius:13px;padding:11px 5px;font-size:11px;font-weight:700;background:#fff;color:#17203b}.id-actions button.primary{background:${accent};color:#fff}
     @media(min-width:700px){.id-panel{left:18px;right:auto;width:390px}.id-top{top:18px}.id-hint{top:105px}}
   `; document.head.appendChild(style);
 
+  const video=document.createElement('video'); video.className='id-camera'; video.autoplay=true; video.muted=true; video.playsInline=true; video.setAttribute('playsinline',''); document.body.appendChild(video);
+  const canvas=document.createElement('canvas'); canvas.className='id-three'; canvas.setAttribute('aria-hidden','true'); document.body.appendChild(canvas);
+
   const top=document.createElement('div'); top.className='id-top'; top.innerHTML=`<div class="id-top-title">AR Home Interior Designer · ${plan.roomLabel}</div><div class="id-top-sub">${plan.styleLabel} style · ${plan.area} sq.ft · ₹${plan.total.toLocaleString()} estimated</div><div class="id-progress"><span></span></div>`; document.body.appendChild(top);
-  const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Scan the floor. When the ring appears, tap to place furniture.'; document.body.appendChild(hint);
+  const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Move the green ring over the floor, then tap it to place furniture.'; document.body.appendChild(hint);
   const toast=document.createElement('div'); toast.className='id-toast'; document.body.appendChild(toast);
-  const fallbackReticle=document.createElement('div'); fallbackReticle.className='fallback-reticle'; fallbackReticle.setAttribute('aria-label','Tap to place furniture'); fallbackReticle.innerHTML='<span class="outer"></span><span class="inner"></span><span class="cross-h"></span><span class="cross-v"></span><span class="label">Tap to place</span>'; document.body.appendChild(fallbackReticle);
-  const fallbackHelp=document.createElement('div'); fallbackHelp.className='fallback-help'; fallbackHelp.textContent='Move the ring over the floor, then tap it'; document.body.appendChild(fallbackHelp);
+  const reticle=document.createElement('div'); reticle.className='fallback-reticle'; reticle.innerHTML='<span class="outer"></span><span class="inner"></span><span class="cross-h"></span><span class="cross-v"></span><span class="label">Tap to place</span>'; document.body.appendChild(reticle);
   const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture</div><div class="id-row" id="itemRow"></div></div><div class="id-card"><div class="id-actions"><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="placeBtn" class="primary">Place</button></div></div><div class="id-card"><div class="id-actions"><button id="repositionBtn">Move</button><button id="resetBtn">Reset</button><button id="removeBtn">Remove</button><button id="doneBtn" class="primary">Done</button></div></div>`; document.body.appendChild(panel);
 
-  document.body.id='idOverlay';
-  const scene=document.createElement('a-scene'); scene.id='freeScene'; scene.setAttribute('renderer','colorManagement: true; physicallyCorrectLights: true; antialias: true'); scene.setAttribute('vr-mode-ui','enabled:false'); scene.setAttribute('webxr','optionalFeatures: hit-test, anchors, dom-overlay; overlayElement: #idOverlay'); scene.setAttribute('device-orientation-permission-ui','enabled:false');
-  const amb=document.createElement('a-entity'); amb.setAttribute('light','type: ambient; color: #fff; intensity: 1.0'); scene.appendChild(amb); const dir=document.createElement('a-entity'); dir.setAttribute('light','type: directional; color: #fff; intensity: .8'); dir.setAttribute('position','1 3 2'); scene.appendChild(dir);
-  const ret=document.createElement('a-entity'); ret.id='reticle'; ret.setAttribute('visible','false'); ret.setAttribute('rotation','-90 0 0'); ret.setAttribute('geometry','primitive: ring; radiusInner: .055; radiusOuter: .07; segmentsTheta: 32'); ret.setAttribute('material',`shader: flat; color: ${accent}; opacity: .95; transparent: true`); scene.appendChild(ret);
-  const cam=document.createElement('a-camera'); cam.setAttribute('position','0 0 0'); scene.appendChild(cam); document.body.appendChild(scene);
-
-  let selectedId=plan.items[0]||'sofa', model=null, placed=false, relocating=false, xrSession=null, xrRefSpace=null, viewerSpace=null, hitTestSource=null, lastHitResult=null, xrAnchorSpace=null, xrAnchor=null, wantAnchor=false;
+  let stream=null, renderer=null, threeScene=null, camera=null, model=null, selectedId=plan.items[0]||'sofa', placed=false, scale=1, rotation=0, reticleX=innerWidth/2, reticleY=innerHeight*.58, dragging=false;
   const itemRow=panel.querySelector('#itemRow');
-  function toastMsg(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1800)}
-  function makePart(tag,attrs,parent){const e=document.createElement('a-'+tag); Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v)); parent.appendChild(e); return e;}
-  function clearModel(){if(model){model.parentElement?.removeChild(model);model=null;}}
-  function buildFurniture(id){clearModel(); const g=document.createElement('a-entity'); g.id='furniture'; g.setAttribute('position','0 0 0'); g.setAttribute('rotation','0 0 0'); g.setAttribute('scale','1 1 1'); g.setAttribute('shadow','cast:true;receive:true');
-    const wood=accent, dark='#263238', light='#E8E1D7';
-    if(id==='sofa'){makePart('box',{position:'0 .22 0',width:'1.65',height:'.42',depth:'.58',color:light},g); makePart('box',{position:'0 .58 .18',width:'1.65',height:'.62',depth:'.22',color:light},g); makePart('box',{position:'-.72 .08 0',width:'.12',height:'.3',depth:'.58',color:dark},g); makePart('box',{position:'.72 .08 0',width:'.12',height:'.3',depth:'.58',color:dark},g);}
-    else if(id==='coffeeTable'){makePart('box',{position:'0 .36 0',width:'1.0',height:'.08',depth:'.55',color:wood},g); for(const x of [-.42,.42]) for(const z of [-.2,.2]) makePart('cylinder',{position:`${x} .17 ${z}`,radius:'.035',height:'.38',color:dark},g);}
-    else if(id==='rug'){makePart('box',{position:'0 .01 0',width:'1.8',height:'.025',depth:'1.25',color:wood},g);}
-    else if(id==='plant'){makePart('cylinder',{position:'0 .18 0',radius:'.18',height:'.35',color:wood},g); makePart('sphere',{position:'0 .62 0',radius:'.38',color:'#5D7A55'},g); makePart('sphere',{position:'-.2 .72 .05',radius:'.24',color:'#6F8E63'},g); makePart('sphere',{position:'.2 .7 -.04',radius:'.25',color:'#55734E'},g);}
-    else if(id==='tvUnit'){makePart('box',{position:'0 .25 0',width:'1.5',height:'.5',depth:'.35',color:wood},g);makePart('box',{position:'0 .82 0',width:'1.15',height:'.62',depth:'.06',color:dark},g);}
-    else if(id==='bed'){makePart('box',{position:'0 .25 0',width:'1.65',height:'.25',depth:'2.05',color:light},g);makePart('box',{position:'0 .48 -.78',width:'1.65',height:'.7',depth:'.16',color:wood},g);makePart('box',{position:'-.55 .42 .45',width:'.55',height:'.12',depth:'.35',color:'#F8F6F2'},g);makePart('box',{position:'.55 .42 .45',width:'.55',height:'.12',depth:'.35',color:'#F8F6F2'},g);}
-    else if(id==='sideTable'){makePart('box',{position:'0 .45 0',width:'.5',height:'.08',depth:'.5',color:wood},g);makePart('cylinder',{position:'0 .22 0',radius:'.06',height:'.45',color:dark},g);}
-    else if(id==='lamp'){makePart('cylinder',{position:'0 .5 0',radius:'.035',height:'1.0',color:dark},g);makePart('cylinder',{position:'0 1.02 0',radius:'.22',height:'.18',color:light},g);}
-    else if(id==='diningTable'){makePart('cylinder',{position:'0 .48 0',radius:'.68',height:'.10',color:wood},g);makePart('cylinder',{position:'0 .24 0',radius:'.08',height:'.45',color:dark},g);}
-    else if(id==='desk'){makePart('box',{position:'0 .55 0',width:'1.25',height:'.09',depth:'.62',color:wood},g);for(const x of [-.52,.52])makePart('box',{position:`${x} .27 0`,width:'.07',height:'.55',depth:'.55',color:dark},g);}
-    else if(id==='chair'){makePart('box',{position:'0 .32 0',width:'.55',height:'.08',depth:'.55',color:wood},g);makePart('box',{position:'0 .68 -.18',width:'.55',height:'.7',depth:'.08',color:light},g);}
-    scene.appendChild(g); model=g; model.setAttribute('visible',false); return g;
+  const toastMsg=t=>{toast.textContent=t;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1600)};
+
+  function material(c,rough=.72){return new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:.04})}
+  function box(g,w,h,d,x,y,z,c){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(c));m.position.set(x,y,z);g.add(m);return m}
+  function cyl(g,r,h,x,y,z,c){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32),material(c));m.position.set(x,y,z);g.add(m);return m}
+  function buildFurniture(id){if(model) threeScene.remove(model); const g=new THREE.Group(); const wood=accent,dark='#263238',light='#E8E1D7';
+    if(id==='sofa'){box(g,1.65,.42,.58,0,.34,0,light);box(g,1.65,.58,.18,0,.72,.20,light);box(g,.18,.52,.62,-.73,.60,0,wood);box(g,.18,.52,.62,.73,.60,0,wood);box(g,.58,.20,.58,-.48,.62,-.04,light);box(g,.58,.20,.58,.48,.62,-.04,light)}
+    else if(id==='coffeeTable'){box(g,1.1,.10,.62,0,.45,0,wood);for(const x of[-.43,.43])for(const z of[-.22,.22])box(g,.07,.45,.07,x,.22,z,dark)}
+    else if(id==='rug'){const m=new THREE.Mesh(new THREE.BoxGeometry(1.8,.025,1.2),material(accent));m.position.y=.02;g.add(m)}
+    else if(id==='plant'){cyl(g,.20,.08,0,.04,0,dark);cyl(g,.07,.65,0,.37,0,wood);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,16,10),material('#5C8A52'));leaf.scale.set(.65,.9,.3);leaf.position.set(Math.cos(a)*.18,.78+Math.sin(i)*.03,Math.sin(a)*.18);g.add(leaf)}}
+    else if(id==='tvUnit'){box(g,1.5,.12,.42,0,.32,0,wood);for(const x of[-.58,.58])box(g,.08,.45,.35,x,.14,0,dark);box(g,1.25,.68,.08,0,.83,-.02,dark)}
+    else if(id==='bed'){box(g,1.7,.22,2.0,0,.25,0,light);box(g,1.7,.85,.14,0,.68,.91,wood);box(g,.75,.14,.42,-.43,.40,.55,light);box(g,.75,.14,.42,.43,.40,.55,light)}
+    else if(id==='sideTable'){box(g,.55,.10,.45,0,.48,0,wood);cyl(g,.05,.45,0,.23,0,dark)}
+    else if(id==='lamp'){cyl(g,.06,.65,0,.33,0,dark);cyl(g,.23,.22,0,.76,0,light)}
+    else if(id==='diningTable'){cyl(g,.68,.10,0,.52,0,wood);cyl(g,.08,.48,0,.27,0,dark)}
+    else if(id==='desk'){box(g,1.25,.09,.62,0,.56,0,wood);for(const x of[-.52,.52])box(g,.07,.55,.55,x,.28,0,dark)}
+    else if(id==='chair'){box(g,.55,.08,.55,0,.35,0,wood);box(g,.55,.7,.08,0,.70,-.22,light);for(const x of[-.20,.20])box(g,.06,.32,.06,x,.17,0,dark)}
+    threeScene.add(g); model=g; model.scale.setScalar(scale); model.rotation.y=rotation; model.visible=placed; return g;
   }
-  function renderItems(){itemRow.innerHTML=''; plan.items.forEach(id=>{const b=document.createElement('button');b.textContent=ITEM[id].label;b.dataset.id=id;b.className=id===selectedId?'active':'';b.onclick=()=>{selectedId=id;renderItems();buildFurniture(id);toastMsg(ITEM[id].label+' selected')};itemRow.appendChild(b)});}
-  renderItems(); buildFurniture(selectedId);
-  function placeAtReticle(){if(!model||!ret.getAttribute('visible'))return; model.object3D.position.copy(ret.object3D.position);model.object3D.quaternion.copy(ret.object3D.quaternion);model.setAttribute('visible',true);placed=true;relocating=false;wantAnchor=true;toastMsg(ITEM[selectedId].label+' placed');}
-  function updateReticle(frame){if(!hitTestSource||!xrRefSpace)return;const rs=frame.getHitTestResults(hitTestSource);if(rs.length){lastHitResult=rs[0];const pose=lastHitResult.getPose(xrRefSpace);if(!pose)return;const m=new THREE.Matrix4();m.fromArray(pose.transform.matrix);ret.object3D.matrix.copy(m);ret.object3D.matrix.decompose(ret.object3D.position,ret.object3D.quaternion,ret.object3D.scale);ret.setAttribute('visible',true);hint.textContent=placed?'Tap Move, then tap the floor to reposition.':'Tap the floor to place '+ITEM[selectedId].label+'.';}else ret.setAttribute('visible',false);}
-  let fallbackStream=null, fallbackMode=false, fallbackPlaced=false, fallbackX=0, fallbackY=0, fallbackScale=1, fallbackRot=0;
-  async function startCameraFallback(){
+  function renderItems(){itemRow.innerHTML='';plan.items.forEach(id=>{const b=document.createElement('button');b.textContent=ITEM[id].label;b.className=id===selectedId?'active':'';b.onclick=()=>{selectedId=id;placed=false;reticle.classList.remove('hidden');buildFurniture(id);toastMsg(ITEM[id].label+' selected')};itemRow.appendChild(b)})}
+
+  function setupThree(){
+    renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:false});
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5)); renderer.setSize(innerWidth,innerHeight,false); renderer.setClearColor(0x000000,0);
+    threeScene=new THREE.Scene(); camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.01,100); camera.position.set(0,0,0);
+    threeScene.add(new THREE.AmbientLight(0xffffff,1.7)); const d=new THREE.DirectionalLight(0xffffff,1.2);d.position.set(1,3,2);threeScene.add(d);
+    buildFurniture(selectedId); renderItems();
+    const resize=()=>{renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();reticleX=Math.min(innerWidth-50,Math.max(50,reticleX));reticleY=Math.min(innerHeight*.72,Math.max(innerHeight*.38,reticleY));updateReticle()}; window.addEventListener('resize',resize,{passive:true}); window.addEventListener('orientationchange',()=>setTimeout(resize,250),{passive:true});
+    const animate=()=>{renderer.render(threeScene,camera);requestAnimationFrame(animate)}; requestAnimationFrame(animate);
+  }
+  function updateReticle(){reticle.style.left=reticleX+'px';reticle.style.top=reticleY+'px';if(!placed)positionModelFromScreen()}
+  function positionModelFromScreen(){if(!model||!camera)return;const x=(reticleX/innerWidth)*2-1;const y=-(reticleY/innerHeight)*2+1;const ndc=new THREE.Vector3(x,y,.5).unproject(camera);const dir=ndc.sub(camera.position).normalize();const floorY=-.62;if(Math.abs(dir.y)<.001)return;const t=(floorY-camera.position.y)/dir.y;if(t<=0)return;const p=dir.multiplyScalar(t);model.position.copy(p);model.position.y=floorY;}
+  function place(){if(!model)return;positionModelFromScreen();model.visible=true;placed=true;reticle.classList.add('hidden');hint.textContent='Furniture placed. Use Rotate / Size, or Move to reposition.';toastMsg(ITEM[selectedId].label+' placed')}
+  function showReticle(){placed=false;model.visible=false;reticle.classList.remove('hidden');hint.textContent='Move the green ring over the floor, then tap it to place '+ITEM[selectedId].label+'.';updateReticle()}
+
+  async function startCamera(){
     try{
-      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera API unavailable');
-      const video=document.createElement('video');
-      video.id='fallbackCamera';
-      video.setAttribute('autoplay',''); video.setAttribute('playsinline',''); video.setAttribute('muted','');
-      video.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:0;background:#000;';
-      document.body.insertBefore(video, document.body.firstChild);
-      fallbackStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-      video.srcObject=fallbackStream;
-      await video.play();
-      fallbackMode=true;
-      fallbackNote.style.display='block';
-      scene.style.cssText='position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2!important;pointer-events:none!important;';
-      scene.setAttribute('embedded','');
-      scene.setAttribute('renderer','alpha: true; colorManagement: true; antialias: true');
-      scene.renderer && scene.renderer.setClearColor(0x000000,0);
-      hint.textContent='Camera AR mode: place the green ring on the floor, then tap it.';
-      toastMsg('Camera AR mode started');
-      // Camera fallback uses a manual placement reticle. It is deliberately visible so the user always has a clear target.
-      model.object3D.position.set(0,-0.65,-2.2);
-      model.setAttribute('visible',false);
-      ret.setAttribute('visible',false);
-      fallbackReticle.classList.add('show');
-      fallbackHelp.classList.add('show');
-      setTimeout(()=>fallbackHelp.classList.remove('show'),5000);
-    }catch(e){
-      console.error('Camera fallback failed:',e);
-      hint.textContent='Camera permission is required. Please allow camera access and reload the page.';
-      toastMsg('Camera access failed');
-    }
+      if(!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable');
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+      video.srcObject=stream; await video.play(); setupThree(); showReticle(); toastMsg('Camera AR ready');
+    }catch(e){console.error(e);hint.textContent='Camera access failed. Allow camera permission and reload the page.';toastMsg('Camera permission required')}
   }
-  async function startXR(){
-    try{
-      if(!window.isSecureContext) throw new Error('Secure context required');
-      if(!navigator.xr) throw new Error('WebXR unavailable');
-      const supported=await navigator.xr.isSessionSupported('immersive-ar');
-      if(!supported) throw new Error('Immersive AR unsupported');
-      const session=await navigator.xr.requestSession('immersive-ar',{
-        requiredFeatures:['hit-test'],
-        optionalFeatures:['dom-overlay','local-floor','anchors'],
-        domOverlay:{root:document.body}
-      });
-      sessionStarted(session);
-    }catch(e){
-      console.warn('WebXR unavailable, switching to camera AR fallback:',e);
-      await startCameraFallback();
-    }
-  }
-  async function setupHit(session){
-    try{
-      viewerSpace=await session.requestReferenceSpace('viewer');
-      xrRefSpace=await session.requestReferenceSpace('local');
-      hitTestSource=await session.requestHitTestSource({space:viewerSpace});
-    }catch(e){
-      console.error('Hit-test setup failed:',e);
-      hitTestSource=null;
-      toastMsg('Floor detection is unavailable');
-    }
-  }
-  function sessionStarted(session){
-    xrSession=session;
-    const r=scene.renderer;
-    if(!r || !r.xr){ toastMsg('AR renderer is unavailable'); return; }
-    r.xr.setReferenceSpaceType('local');
-    r.xr.setSession(session);
-    setupHit(session);
-    session.addEventListener('select',()=>{if(ret.getAttribute('visible'))placeAtReticle()});
-    r.setAnimationLoop(async(t,frame)=>{
-      if(!frame)return;
-      if(!placed||relocating)updateReticle(frame);
-      if(wantAnchor&&lastHitResult){
-        try{if(lastHitResult.createAnchor){xrAnchor=await lastHitResult.createAnchor();xrAnchorSpace=xrAnchor.anchorSpace}}catch(e){}
-        wantAnchor=false;
-      }
-      if(xrAnchorSpace&&xrRefSpace&&placed&&!relocating){
-        const pose=frame.getPose(xrAnchorSpace,xrRefSpace);
-        if(pose){const m=new THREE.Matrix4();m.fromArray(pose.transform.matrix);model.object3D.position.setFromMatrixPosition(m);}
-      }
-    });
-    session.addEventListener('end',()=>{
-      xrSession=null; hitTestSource=null; xrAnchorSpace=null;
-      r.setAnimationLoop(null);
-      hint.textContent='AR session ended.';
-    });
-  }
-  window.addEventListener('click',()=>{if(xrSession&&ret.getAttribute('visible')&&(!placed||relocating))placeAtReticle()},{passive:true});
-  function placeFallbackFurniture(){
-    if(!fallbackMode || !model) return;
-    model.object3D.position.set(0,-0.65,-2.2);
-    model.object3D.scale.set(fallbackScale,fallbackScale,fallbackScale);
-    model.object3D.rotation.y=fallbackRot;
-    model.setAttribute('visible',true); fallbackPlaced=true;
-    hint.textContent='Furniture placed. Use Move to show the ring again, or Rotate / Size to adjust it.';
-    fallbackReticle.classList.remove('show');
-    fallbackHelp.classList.remove('show');
-    toastMsg(ITEM[selectedId].label+' placed');
-  }
-  fallbackReticle.addEventListener('click',(e)=>{e.stopPropagation(); if(fallbackMode) placeFallbackFurniture();});
-  panel.querySelector('#placeBtn').onclick=()=>{
-    if(fallbackMode){
-      placeFallbackFurniture();
-      return;
-    }
-    if(!xrSession){startXR();return} if(ret.getAttribute('visible'))placeAtReticle(); else toastMsg('Move the phone until the floor ring appears')
-  };
-  panel.querySelector('#repositionBtn').onclick=()=>{
-    if(fallbackMode){
-      model.setAttribute('visible',false); fallbackPlaced=false;
-      fallbackReticle.classList.add('show'); fallbackHelp.classList.add('show');
-      setTimeout(()=>fallbackHelp.classList.remove('show'),3500);
-      hint.textContent='Move the green ring over the floor, then tap it to place '+ITEM[selectedId].label+'.';
-      return;
-    }
-    if(!xrSession){startXR();return}relocating=true;placed=false;hint.textContent='Move the phone to the new position and tap Place.'
-  };
-  panel.querySelector('#resetBtn').onclick=()=>{if(model){model.object3D.rotation.set(0,0,0);model.object3D.scale.set(1,1,1); if(fallbackMode){model.object3D.position.set(0,-0.65,-2.2);fallbackScale=1;fallbackRot=0;fallbackReticle.classList.add('show');fallbackHelp.classList.add('show');setTimeout(()=>fallbackHelp.classList.remove('show'),3000);}} toastMsg('Furniture reset')};
-  panel.querySelector('#removeBtn').onclick=()=>{if(model){model.setAttribute('visible',false);placed=false;fallbackPlaced=false;if(fallbackMode){fallbackReticle.classList.add('show');hint.textContent='Select a position on the floor and tap the green ring to place furniture.';}toastMsg('Furniture hidden')}};
-  panel.querySelector('#rotateL').onclick=()=>{if(model){model.object3D.rotation.y-=Math.PI/8;fallbackRot=model.object3D.rotation.y}};
-  panel.querySelector('#scaleDown').onclick=()=>{if(model){const s=model.object3D.scale.x;const n=Math.max(.55,s-.1);model.object3D.scale.set(n,n,n);fallbackScale=n}};
-  panel.querySelector('#scaleUp').onclick=()=>{if(model){const s=model.object3D.scale.x;const n=Math.min(1.8,s+.1);model.object3D.scale.set(n,n,n);fallbackScale=n}};
-  panel.querySelector('#doneBtn').onclick=()=>{ if(fallbackStream){fallbackStream.getTracks().forEach(t=>t.stop());fallbackStream=null;} fallbackReticle.classList.remove('show');fallbackHelp.classList.remove('show'); toastMsg('Design saved. Estimated budget ₹'+plan.total.toLocaleString());setTimeout(()=>{window.location.href='index.html'},900)};
-  // Start AR after an explicit user action; this keeps browser permission UX predictable.
-  panel.querySelector('#placeBtn').focus();
+
+  function pointerMove(e){if(!dragging)return;const p=e.touches?e.touches[0]:e;reticleX=Math.min(innerWidth-45,Math.max(45,p.clientX));reticleY=Math.min(innerHeight*.75,Math.max(innerHeight*.35,p.clientY));updateReticle()}
+  reticle.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;reticle.setPointerCapture?.(e.pointerId)});
+  window.addEventListener('pointermove',pointerMove,{passive:false}); window.addEventListener('pointerup',()=>dragging=false,{passive:true});
+  reticle.addEventListener('click',e=>{e.stopPropagation();place()});
+
+  panel.querySelector('#placeBtn').onclick=()=>place();
+  panel.querySelector('#repositionBtn').onclick=()=>showReticle();
+  panel.querySelector('#resetBtn').onclick=()=>{scale=1;rotation=0;if(model){model.scale.setScalar(1);model.rotation.y=0}showReticle();toastMsg('Furniture reset')};
+  panel.querySelector('#removeBtn').onclick=()=>{if(model)model.visible=false;showReticle();toastMsg('Furniture removed')};
+  panel.querySelector('#rotateL').onclick=()=>{rotation-=Math.PI/8;if(model)model.rotation.y=rotation};
+  panel.querySelector('#scaleDown').onclick=()=>{scale=Math.max(.55,scale-.1);if(model)model.scale.setScalar(scale)};
+  panel.querySelector('#scaleUp').onclick=()=>{scale=Math.min(1.8,scale+.1);if(model)model.scale.setScalar(scale)};
+  panel.querySelector('#doneBtn').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());toastMsg('Design saved · ₹'+plan.total.toLocaleString());setTimeout(()=>location.href='index.html',700)};
+
+  startCamera();
 })();
 }
 </script>
