@@ -1579,12 +1579,27 @@ if (window.FREE_MODE) {
     .id-card{background:rgba(13,20,42,.84);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:10px;backdrop-filter:blur(14px);color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.25)}
     .id-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.id-row button{flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 11px;font-size:11px}.id-row button.active{background:${accent};border-color:transparent;color:#fff;font-weight:700}.id-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.id-actions button{border:0;border-radius:13px;padding:10px 5px;font-size:11px;font-weight:700;background:#fff;color:#17203b}.id-actions button.primary{background:${accent};color:#fff}.id-hint{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:15;padding:9px 12px;border-radius:14px;background:rgba(0,0,0,.48);color:#fff;font-size:11px;white-space:nowrap;backdrop-filter:blur(10px)}
     .id-toast{position:fixed;top:132px;left:50%;transform:translateX(-50%);z-index:30;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.94);color:#15203b;font-size:11px;font-weight:700;opacity:0;transition:.25s;pointer-events:none}.id-toast.show{opacity:1}
+    /* Camera fallback placement reticle. This is a manual visual placement aid when WebXR hit-test is unavailable. */
+    .fallback-reticle{position:fixed;left:50%;top:49%;width:92px;height:92px;transform:translate(-50%,-50%);z-index:18;display:none;pointer-events:auto;touch-action:none;cursor:pointer;filter:drop-shadow(0 5px 14px rgba(0,0,0,.45));}
+    .fallback-reticle.show{display:block}
+    .fallback-reticle .outer{position:absolute;inset:0;border:3px solid rgba(74,255,180,.95);border-radius:50%;box-sizing:border-box;animation:reticlePulse 1.35s ease-in-out infinite;}
+    .fallback-reticle .inner{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;box-sizing:border-box;background:rgba(74,255,180,.22);}
+    .fallback-reticle .cross-h,.fallback-reticle .cross-v{position:absolute;background:rgba(255,255,255,.9);border-radius:2px;}
+    .fallback-reticle .cross-h{width:30px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}
+    .fallback-reticle .cross-v{width:2px;height:30px;left:50%;top:50%;transform:translate(-50%,-50%)}
+    .fallback-reticle .label{position:absolute;left:50%;top:102%;transform:translateX(-50%);white-space:nowrap;background:rgba(5,12,25,.82);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800;backdrop-filter:blur(8px)}
+    @keyframes reticlePulse{0%,100%{transform:scale(.94);opacity:.72}50%{transform:scale(1.06);opacity:1}}
+    .fallback-help{position:fixed;left:50%;top:calc(49% + 60px);transform:translateX(-50%);z-index:17;display:none;white-space:nowrap;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;pointer-events:none}
+    .fallback-help.show{display:block}
+    @media(max-width:380px){.fallback-reticle{width:78px;height:78px}.fallback-reticle .label{font-size:9px}.fallback-help{font-size:9px}}
     @media(min-width:700px){.id-panel{left:18px;right:auto;width:390px}.id-top{top:18px}.id-hint{top:105px}}
   `; document.head.appendChild(style);
 
   const top=document.createElement('div'); top.className='id-top'; top.innerHTML=`<div class="id-top-title">AR Home Interior Designer · ${plan.roomLabel}</div><div class="id-top-sub">${plan.styleLabel} style · ${plan.area} sq.ft · ₹${plan.total.toLocaleString()} estimated</div><div class="id-progress"><span></span></div>`; document.body.appendChild(top);
   const hint=document.createElement('div'); hint.className='id-hint'; hint.textContent='Scan the floor. When the ring appears, tap to place furniture.'; document.body.appendChild(hint);
   const toast=document.createElement('div'); toast.className='id-toast'; document.body.appendChild(toast);
+  const fallbackReticle=document.createElement('div'); fallbackReticle.className='fallback-reticle'; fallbackReticle.setAttribute('aria-label','Tap to place furniture'); fallbackReticle.innerHTML='<span class="outer"></span><span class="inner"></span><span class="cross-h"></span><span class="cross-v"></span><span class="label">Tap to place</span>'; document.body.appendChild(fallbackReticle);
+  const fallbackHelp=document.createElement('div'); fallbackHelp.className='fallback-help'; fallbackHelp.textContent='Move the ring over the floor, then tap it'; document.body.appendChild(fallbackHelp);
   const panel=document.createElement('div'); panel.className='id-panel'; panel.innerHTML=`<div class="id-card"><div style="font-size:11px;opacity:.7;margin:0 0 7px">Recommended furniture</div><div class="id-row" id="itemRow"></div></div><div class="id-card"><div class="id-actions"><button id="rotateL">↶ Rotate</button><button id="scaleDown">− Size</button><button id="scaleUp">+ Size</button><button id="placeBtn" class="primary">Place</button></div></div><div class="id-card"><div class="id-actions"><button id="repositionBtn">Move</button><button id="resetBtn">Reset</button><button id="removeBtn">Remove</button><button id="doneBtn" class="primary">Done</button></div></div>`; document.body.appendChild(panel);
 
   document.body.id='idOverlay';
@@ -1635,12 +1650,15 @@ if (window.FREE_MODE) {
       scene.setAttribute('embedded','');
       scene.setAttribute('renderer','alpha: true; colorManagement: true; antialias: true');
       scene.renderer && scene.renderer.setClearColor(0x000000,0);
-      hint.textContent='Camera AR mode: tap Place, then use Rotate / Size. WebXR is unavailable on this device.';
+      hint.textContent='Camera AR mode: place the green ring on the floor, then tap it.';
       toastMsg('Camera AR mode started');
-      // In fallback mode we use a simple camera-relative placement.
+      // Camera fallback uses a manual placement reticle. It is deliberately visible so the user always has a clear target.
       model.object3D.position.set(0,-0.65,-2.2);
       model.setAttribute('visible',false);
       ret.setAttribute('visible',false);
+      fallbackReticle.classList.add('show');
+      fallbackHelp.classList.add('show');
+      setTimeout(()=>fallbackHelp.classList.remove('show'),5000);
     }catch(e){
       console.error('Camera fallback failed:',e);
       hint.textContent='Camera permission is required. Please allow camera access and reload the page.';
@@ -1702,27 +1720,41 @@ if (window.FREE_MODE) {
     });
   }
   window.addEventListener('click',()=>{if(xrSession&&ret.getAttribute('visible')&&(!placed||relocating))placeAtReticle()},{passive:true});
+  function placeFallbackFurniture(){
+    if(!fallbackMode || !model) return;
+    model.object3D.position.set(0,-0.65,-2.2);
+    model.object3D.scale.set(fallbackScale,fallbackScale,fallbackScale);
+    model.object3D.rotation.y=fallbackRot;
+    model.setAttribute('visible',true); fallbackPlaced=true;
+    hint.textContent='Furniture placed. Use Move to show the ring again, or Rotate / Size to adjust it.';
+    fallbackReticle.classList.remove('show');
+    fallbackHelp.classList.remove('show');
+    toastMsg(ITEM[selectedId].label+' placed');
+  }
+  fallbackReticle.addEventListener('click',(e)=>{e.stopPropagation(); if(fallbackMode) placeFallbackFurniture();});
   panel.querySelector('#placeBtn').onclick=()=>{
     if(fallbackMode){
-      model.object3D.position.set(0,-0.65,-2.2);
-      model.object3D.scale.set(fallbackScale,fallbackScale,fallbackScale);
-      model.object3D.rotation.y=fallbackRot;
-      model.setAttribute('visible',true); fallbackPlaced=true;
-      hint.textContent='Furniture is overlaid on the camera view. Use Rotate and Size to adjust it.';
-      toastMsg(ITEM[selectedId].label+' placed'); return;
+      placeFallbackFurniture();
+      return;
     }
     if(!xrSession){startXR();return} if(ret.getAttribute('visible'))placeAtReticle(); else toastMsg('Move the phone until the floor ring appears')
   };
   panel.querySelector('#repositionBtn').onclick=()=>{
-    if(fallbackMode){ model.setAttribute('visible',true); fallbackPlaced=true; hint.textContent='Tap Place after adjusting the furniture with Rotate / Size.'; return; }
+    if(fallbackMode){
+      model.setAttribute('visible',false); fallbackPlaced=false;
+      fallbackReticle.classList.add('show'); fallbackHelp.classList.add('show');
+      setTimeout(()=>fallbackHelp.classList.remove('show'),3500);
+      hint.textContent='Move the green ring over the floor, then tap it to place '+ITEM[selectedId].label+'.';
+      return;
+    }
     if(!xrSession){startXR();return}relocating=true;placed=false;hint.textContent='Move the phone to the new position and tap Place.'
   };
-  panel.querySelector('#resetBtn').onclick=()=>{if(model){model.object3D.rotation.set(0,0,0);model.object3D.scale.set(1,1,1); if(fallbackMode) model.object3D.position.set(0,-0.65,-2.2)} toastMsg('Furniture reset')};
-  panel.querySelector('#removeBtn').onclick=()=>{if(model){model.setAttribute('visible',false);placed=false;fallbackPlaced=false;toastMsg('Furniture hidden')}};
+  panel.querySelector('#resetBtn').onclick=()=>{if(model){model.object3D.rotation.set(0,0,0);model.object3D.scale.set(1,1,1); if(fallbackMode){model.object3D.position.set(0,-0.65,-2.2);fallbackScale=1;fallbackRot=0;fallbackReticle.classList.add('show');fallbackHelp.classList.add('show');setTimeout(()=>fallbackHelp.classList.remove('show'),3000);}} toastMsg('Furniture reset')};
+  panel.querySelector('#removeBtn').onclick=()=>{if(model){model.setAttribute('visible',false);placed=false;fallbackPlaced=false;if(fallbackMode){fallbackReticle.classList.add('show');hint.textContent='Select a position on the floor and tap the green ring to place furniture.';}toastMsg('Furniture hidden')}};
   panel.querySelector('#rotateL').onclick=()=>{if(model){model.object3D.rotation.y-=Math.PI/8;fallbackRot=model.object3D.rotation.y}};
   panel.querySelector('#scaleDown').onclick=()=>{if(model){const s=model.object3D.scale.x;const n=Math.max(.55,s-.1);model.object3D.scale.set(n,n,n);fallbackScale=n}};
   panel.querySelector('#scaleUp').onclick=()=>{if(model){const s=model.object3D.scale.x;const n=Math.min(1.8,s+.1);model.object3D.scale.set(n,n,n);fallbackScale=n}};
-  panel.querySelector('#doneBtn').onclick=()=>{ if(fallbackStream){fallbackStream.getTracks().forEach(t=>t.stop());fallbackStream=null;} toastMsg('Design saved. Estimated budget ₹'+plan.total.toLocaleString());setTimeout(()=>{window.location.href='index.html'},900)};
+  panel.querySelector('#doneBtn').onclick=()=>{ if(fallbackStream){fallbackStream.getTracks().forEach(t=>t.stop());fallbackStream=null;} fallbackReticle.classList.remove('show');fallbackHelp.classList.remove('show'); toastMsg('Design saved. Estimated budget ₹'+plan.total.toLocaleString());setTimeout(()=>{window.location.href='index.html'},900)};
   // Start AR after an explicit user action; this keeps browser permission UX predictable.
   panel.querySelector('#placeBtn').focus();
 })();
