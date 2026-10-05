@@ -53,3 +53,9 @@ Surface-placement AR requires WebXR AR support. Chrome on supported Android devi
 - Save Design / My Saved Designs using browser localStorage
 - Saved designs can be reopened from the landing page
 - Designs are stored locally in the browser; a cloud database is not required for the demo
+
+
+## Realistic GLB Models
+The AR scene uses web-optimized GLB furniture models from 3DAssets.dev. The models are self-contained, CORS-enabled, real-world-scale assets and are loaded through Three.js GLTFLoader. Model credits and URLs are documented in `MODEL_CREDITS.md`.
+
+If a CDN model is temporarily unavailable, the application keeps a lightweight fallback object so the AR workflow does not crash.

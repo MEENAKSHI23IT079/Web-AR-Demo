@@ -1,14 +1,14 @@
 # 3D Model Credits
 
-This project uses free public-domain (CC0) GLB assets from Innerscene's public 3D Parts Library as optional realistic furniture models.
+This version uses web-optimized, self-contained GLB furniture assets from 3DAssets.dev. The listed assets are published under CC0 1.0 Universal and can be used in student/commercial projects.
 
-- Sofa: Lowline - Low Three-Seat Sofa — CC0, textured/PBR, real-world scale.
-- Coffee table: TRIO - Nesting Coffee Table Set — CC0, textured/PBR, real-world scale.
-- Rug: Rug rectangle — CC0.
-- Plant: Anthurium shrubs — CC0, photoreal PBR model from Poly Haven.
-- TV: Television modern — CC0.
-- Dining table: Wooden table — CC0, photoreal PBR model from Poly Haven.
+| App item | Asset | CDN model |
+|---|---|---|
+| Sofa | Sofa Three Seat (Bedroom and Living Room Furniture) | https://cdn.3dassets.dev/assets/38778/v1/model.glb |
+| Coffee Table | Coffee Table Rect (Bedroom and Living Room Furniture) | https://cdn.3dassets.dev/assets/38790/v1/model.glb |
+| Rug | Day Room Rug (Care Home and Day Room) | https://cdn.3dassets.dev/assets/35741/v1/model.glb |
+| Plant | Tall Potted Plant (Care Home and Day Room) | https://cdn.3dassets.dev/assets/35747/v1/model.glb |
+| TV Unit | Television on a Low Unit (Care Home and Day Room) | https://cdn.3dassets.dev/assets/35738/v1/model.glb |
+| Dining Table | Dining Table 6-Seat (Bedroom and Living Room Furniture) | https://cdn.3dassets.dev/assets/38791/v1/model.glb |
 
-The application keeps simple procedural furniture as a fallback if a remote model is unavailable.
-
-The models are loaded from the source library at runtime rather than bundled into the repository, which keeps the GitHub Pages repository smaller. For a completely offline deployment, download the cited GLB files and place them under `assets/models/`, then change `MODEL_URLS` in `ar-scene.html` to the local paths.
+The app loads these models through Three.js GLTFLoader. A lightweight procedural fallback remains available if an external model cannot be fetched.

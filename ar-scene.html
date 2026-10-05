@@ -1571,15 +1571,17 @@ if (window.FREE_MODE) {
   const accent=palette[plan.accent]||palette.auto;
 
   // Public-domain / CC0 GLB assets. The app keeps primitive fallbacks if a model cannot be fetched.
+  // Web-optimized, self-contained GLB assets from 3DAssets.dev.
+  // They are CORS-enabled and released under CC0, so GitHub Pages can load them directly.
   const MODEL_URLS={
-    sofa:'https://www.innerscene.com/api/library/lowline-low-three-seat-sofa-4bb27e8c/download',
-    coffeeTable:'https://www.innerscene.com/api/library/trio-nesting-coffee-table-set-a1a295a4/download',
-    rug:'https://www.innerscene.com/api/library/rug-rectangle-beef54bd/download',
-    plant:'https://www.innerscene.com/api/library/anthurium-shrubs-9b542d34/download',
-    tvUnit:'https://www.innerscene.com/api/library/television-modern-9ac9fe77/download',
-    diningTable:'https://www.innerscene.com/api/library/wooden-table-618f9900/download'
+    sofa:'https://cdn.3dassets.dev/assets/38778/v1/model.glb',
+    coffeeTable:'https://cdn.3dassets.dev/assets/38790/v1/model.glb',
+    rug:'https://cdn.3dassets.dev/assets/35741/v1/model.glb',
+    plant:'https://cdn.3dassets.dev/assets/35747/v1/model.glb',
+    tvUnit:'https://cdn.3dassets.dev/assets/35738/v1/model.glb',
+    diningTable:'https://cdn.3dassets.dev/assets/38791/v1/model.glb'
   };
-  const TARGET_SIZES={sofa:[2.6,.95,.84],coffeeTable:[1.14,.47,.74],rug:[1.8,.03,1.2],plant:[.9,.8,.9],tvUnit:[1.5,.8,.42],diningTable:[1.13,.8,.71]};
+  const TARGET_SIZES={sofa:[2.5,.99,.92],coffeeTable:[1.2,.47,.6],rug:[2.2,.025,1.734],plant:[.442,1.336,.42],tvUnit:[1.2,.9,.55],diningTable:[2,.773,1]};
 
   document.querySelectorAll('.ar-bottom-controls,.ar-help-btn,.ar-help-panel,.ar-blocker,#arScene').forEach(e=>e.remove());
   const style=document.createElement('style'); style.textContent=`
@@ -1648,12 +1650,20 @@ if (window.FREE_MODE) {
     const b2=new THREE.Box3().setFromObject(obj); const center=b2.getCenter(new THREE.Vector3()); obj.position.sub(center); const b3=new THREE.Box3().setFromObject(obj); obj.position.y += -b3.min.y;
   }
 
+  const MODEL_CACHE={};
   function makeObject(id){
     const wrapper=new THREE.Group(); wrapper.userData.itemId=id; wrapper.userData.loaded=false; wrapper.visible=true;
     const fallback=fallbackFurniture(id); wrapper.add(fallback); fallback.visible=true;
     if(loader && MODEL_URLS[id]){
-      loader.load(MODEL_URLS[id], gltf=>{
-        try{const real=gltf.scene||gltf.scenes?.[0]; if(!real)return; normalizeModel(real,id); real.visible=true; fallback.visible=false; wrapper.add(real); wrapper.userData.loaded=true; wrapper.userData.model=real; toastMsg(ITEM[id].label+' realistic 3D model loaded');}catch(e){console.warn('model setup failed',e)}
+      const useReal=(scene)=>{
+        try{
+          const real=scene.clone(true);
+          normalizeModel(real,id); real.visible=true; fallback.visible=false; wrapper.add(real); wrapper.userData.loaded=true; wrapper.userData.model=real;
+        }catch(e){console.warn('model setup failed',e)}
+      };
+      if(MODEL_CACHE[id]) useReal(MODEL_CACHE[id]);
+      else loader.load(MODEL_URLS[id],gltf=>{
+        const source=gltf.scene||gltf.scenes?.[0]; if(!source)return; MODEL_CACHE[id]=source; useReal(source); toastMsg(ITEM[id].label+' realistic 3D model loaded');
       },undefined,err=>console.warn('realistic model unavailable, fallback kept',id,err));
     }
     threeScene.add(wrapper); return wrapper;
@@ -1663,8 +1673,12 @@ if (window.FREE_MODE) {
 
   function setupThree(){
     renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:false}); renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5)); renderer.setSize(innerWidth,innerHeight,false); renderer.setClearColor(0x000000,0);
+    if('outputColorSpace' in renderer) renderer.outputColorSpace=THREE.SRGBColorSpace;
+    if('toneMapping' in renderer) renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.05;
     threeScene=new THREE.Scene(); camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.01,100); camera.position.set(0,0,0);
-    threeScene.add(new THREE.AmbientLight(0xffffff,2.1)); const d=new THREE.DirectionalLight(0xffffff,1.6);d.position.set(1,3,2);threeScene.add(d);
+    threeScene.add(new THREE.HemisphereLight(0xffffff,0x5b6678,2.0)); const d=new THREE.DirectionalLight(0xffffff,2.2);d.position.set(1,4,2);threeScene.add(d);
+    const fill=new THREE.DirectionalLight(0xfff1df,0.65); fill.position.set(-2,1,3); threeScene.add(fill);
     try{loader=new THREE.GLTFLoader()}catch(e){console.warn('GLTFLoader unavailable; fallback models will be used')}
     renderItems();
     const resize=()=>{renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();reticleX=Math.min(innerWidth-50,Math.max(50,reticleX));reticleY=Math.min(innerHeight*.72,Math.max(innerHeight*.38,reticleY));updateReticle()}; window.addEventListener('resize',resize,{passive:true}); window.addEventListener('orientationchange',()=>setTimeout(resize,250),{passive:true});
